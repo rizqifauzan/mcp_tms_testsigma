@@ -6,6 +6,8 @@
 **Target MVP:** 1-2 hari kerja
 
 > ⚠️ **Product clarification:** Target adalah **Testsigma Test Management** (TMS — `test-management.testsigma.com`), BUKAN Testsigma automation platform (`app.testsigma.com`). Keduanya produk berbeda dengan API berbeda. TMS fokus ke test case management, folder hierarchy, test plans, requirements traceability — tidak ada NLP test step grammar.
+>
+> 📚 **Single source of truth:** semua fakta produk, entity model, field schema, endpoint, dan limitations didokumentasikan di [`docs/REFERENCE.md`](./docs/REFERENCE.md). Plan ini point ke sana untuk detail teknis — JANGAN duplikasi info di dua file. Update reference dulu, baru update plan kalau scope berubah.
 
 ---
 
@@ -22,10 +24,11 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 - ✅ Zero monthly hosting cost (Vercel free tier)
 
 ### Non-Goals (Out of Scope MVP)
-- ❌ Auto-record UI test steps (butuh browser recorder)
-- ❌ Run test execution + wait result (long-running, butuh async pattern)
+- ❌ Auto-record UI test steps (butuh browser recorder — domain automation platform, bukan TMS)
+- ❌ Trigger automation runs (TMS bukan execution engine)
 - ❌ UI element locator generation
-- ❌ Full test step CRUD dengan NLP grammar (deferred ke Phase 4-5)
+- ❌ Replicate TMS native AI agents (Generator/Sprint Planner/Bug Reporter — already exist di TMS UI, lihat [REFERENCE §6](./docs/REFERENCE.md#6-native-integrations-relevant-ke-mcp))
+- ❌ Step attachment upload (defer; tool tanpa attachment di MVP)
 
 ---
 
@@ -87,56 +90,49 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 ## 3. Scope Breakdown
 
 ### Phase 0 — API Discovery (Confidence: 🟡 Medium) ⭐ NEW
-**Goal:** Reverse-engineer TMS REST API karena public docs tipis.
+**Goal:** Reverse-engineer TMS REST API karena public docs tipis. Resolve open questions di [REFERENCE §8](./docs/REFERENCE.md#8-known-limitations--open-questions).
 
-**Approach:**
-1. Login ke `test-management.testsigma.com`, buka DevTools → Network
-2. Capture request untuk setiap action: list projects, open folder, view test case, create TC, update TC, list test plans, run trigger
-3. Document:
-   - Base URL (e.g., `test-management.testsigma.com/api/v1/...` — TBD)
-   - Auth header format (Bearer? `Authorization`? custom header?)
-   - Resource model: project → folder tree → test case → steps (plain text di TMS, BUKAN NLP)
-   - Pagination shape (offset vs cursor)
-   - Required vs optional fields di create payload
-4. Bikin `docs/API_NOTES.md` sebagai single source of truth
-5. Validasi: bisa generate API key dari TMS settings? scope-nya apa?
+**Approach:** DevTools Network capture untuk setiap action — full checklist ada di [REFERENCE §4 Discovery plan](./docs/REFERENCE.md#discovery-plan-phase-0). Hasil capture diisi ke [REFERENCE §5 Endpoints Reference](./docs/REFERENCE.md#5-endpoints-reference).
 
 **Estimated effort:** 2-3 jam
-**Risk:** Medium (kalau API key TMS gak tersedia / butuh session cookie, blocker total)
-**Exit criteria:** Bisa `curl` dapet list project pakai API key.
+**Risk:** Medium (kalau API key TMS gak tersedia / butuh session cookie, blocker total — lihat fallback risk di REFERENCE §3)
+**Exit criteria:**
+- Section 5 di REFERENCE.md terisi minimal untuk projects, folders, test_cases (read + create)
+- Auth flow confirmed via `curl` test
+- Open questions #1-#4 di REFERENCE §8 closed
 
 ### Phase 1 — Read-Only Tools (Confidence: 🟢 High)
 **Goal:** User bisa browse TMS data dari Claude tanpa buka UI.
 
-> Endpoint paths di bawah ini **placeholder** — finalisasi setelah Phase 0.
+> Endpoint paths placeholder — finalisasi & sync dengan [REFERENCE §5](./docs/REFERENCE.md#5-endpoints-reference) setelah Phase 0. Entity model lihat [REFERENCE §2](./docs/REFERENCE.md#2-entity-model--hierarchy).
 
-| Tool | Endpoint (TBD) | Use Case |
+| Tool | Resource (lihat REFERENCE §5) | Use Case |
 |------|----------|----------|
-| `list_projects` | `GET /projects` | "Show me my Testsigma TMS projects" |
-| `get_project` | `GET /projects/{id}` | "Detail project GROW" |
-| `list_folders` | `GET /projects/{id}/folders` | "Show folder tree GROW" |
-| `list_test_cases` | `GET /folders/{id}/test_cases` (or by project) | "List test case di folder Voucher" |
-| `get_test_case` | `GET /test_cases/{id}` | "Show detail TC-1234" |
-| `list_test_plans` | `GET /test_plans?projectId=X` | "What test plans di GROW?" |
-| `get_test_plan` | `GET /test_plans/{id}` | "Detail Regression Plan" |
-| `list_test_suites` | `GET /test_suites?projectId=X` | "What suites are in GROW?" |
-| `search_test_cases` | `GET /test_cases/search` | "Find test cases with 'voucher'" |
+| `list_projects` | Projects | "Show me my Testsigma TMS projects" |
+| `get_project` | Projects | "Detail project GROW" |
+| `list_folders` | Folders | "Show folder tree GROW" |
+| `list_test_cases` | Test Cases | "List test case di folder Voucher" |
+| `get_test_case` | Test Cases | "Show detail TC-1234 with steps" |
+| `list_test_plans` | Test Plans | "What test plans di GROW?" |
+| `get_test_plan` | Test Plans | "Detail Regression Plan" |
+| `list_test_suites` | Test Suites | "What suites are in GROW?" |
+| `search_test_cases` | Test Cases | "Find test cases with 'voucher'" |
 
 **Estimated effort:** 2-3 jam
 **Risk:** Low (read-only, no destructive ops)
 
 ### Phase 2 — Full Test Case CRUD (Confidence: 🟢 High)
-**Goal:** Create/update/delete test case INCLUDING steps. Di TMS standalone, test step = plain text (title + expected result), TIDAK ada NLP grammar — jadi step CRUD masuk MVP.
+**Goal:** Create/update/delete test case INCLUDING steps. Di TMS, test step = plain text `{ action, expected }` — lihat [REFERENCE §2 Test Case Fields](./docs/REFERENCE.md#test-case-fields-confirmed-from-docs). Tanpa NLP grammar, step CRUD jadi simple → masuk MVP.
 
-| Tool | Endpoint (TBD) | Behavior |
+| Tool | Resource | Behavior |
 |------|----------|----------|
-| `create_test_case` | `POST /test_cases` | Create dengan nama, deskripsi, priority, type, folder, steps[] |
-| `update_test_case` | `PUT /test_cases/{id}` | Update metadata + steps |
-| `delete_test_case` | `DELETE /test_cases/{id}` | Delete dengan confirmation prompt |
-| `add_step` | `POST /test_cases/{id}/steps` | Append step (action + expected) |
-| `update_step` | `PUT /test_steps/{id}` | Edit step text |
-| `delete_step` | `DELETE /test_steps/{id}` | Remove step |
-| `create_folder` | `POST /folders` | Organize TC ke folder baru |
+| `create_test_case` | Test Cases | Create dengan field set lengkap (name, desc, priority, type, status, labels, owner, folder, steps[], requirements[]) |
+| `update_test_case` | Test Cases | Update metadata + steps |
+| `delete_test_case` | Test Cases | Delete dengan confirmation prompt + server-side `confirm: true` flag |
+| `add_step` | Test Cases | Append step (action + expected) |
+| `update_step` | Test Cases | Edit step text |
+| `delete_step` | Test Cases | Remove step |
+| `create_folder` | Folders | Organize TC ke folder baru |
 
 **Estimated effort:** 3-4 jam
 **Risk:** Medium (write ops, butuh validation + idempotency)
@@ -166,30 +162,30 @@ User prompt → Claude orchestrator
 ### Phase 4 — Test Plans & Runs (Confidence: 🟡 Medium) ⭐ REVISED
 **Goal:** Manage test plans (collection of TC) dan record manual run results.
 
-TMS adalah **test management**, bukan automation runner — jadi "execution" di sini artinya update status manual (Pass/Fail/Blocked/Skip) per TC di test run, bukan trigger automation.
+TMS = test **management**, bukan execution engine — "execution" di sini artinya update status manual (Pass/Fail/Blocked/Skip) per TC di test run. Entity hierarchy: lihat [REFERENCE §2](./docs/REFERENCE.md#2-entity-model--hierarchy) (Plans → Suites → TC; Runs adalah instance dari Plan).
 
-| Tool | Endpoint (TBD) | Notes |
+| Tool | Resource | Notes |
 |------|----------|-------|
-| `create_test_plan` | `POST /test_plans` | Collection of TC IDs |
-| `add_tc_to_plan` | `POST /test_plans/{id}/test_cases` | Bulk add |
-| `start_test_run` | `POST /test_runs` | Open new run dari plan |
-| `update_run_result` | `PUT /test_runs/{id}/results/{tcId}` | Mark TC Pass/Fail dengan comment |
-| `get_run_summary` | `GET /test_runs/{id}/summary` | Aggregate pass/fail count |
+| `create_test_plan` | Test Plans | Strategy + scope |
+| `add_suite_to_plan` | Test Plans | Plans contain Suites (BUKAN TC langsung) |
+| `start_test_run` | Test Runs | Instance of plan execution |
+| `update_run_result` | Test Runs | Mark TC Pass/Fail/Blocked/Skip + comment |
+| `get_run_summary` | Test Runs | Aggregate pass/fail count |
 
 **Estimated effort:** 3-4 jam
 **Risk:** Medium (state machine result, comment formatting)
 
 ### Phase 5 — Requirements & Jira Traceability (Confidence: 🟡 Medium) ⭐ REVISED
-**Goal:** TMS native feature: link TC ↔ Jira issue (requirement traceability).
+**Goal:** TMS native field "Requirements" = Jira issue keys (confirmed di [REFERENCE §2](./docs/REFERENCE.md#test-case-fields-confirmed-from-docs)). Two-way sync sudah ada di TMS — kita expose lewat MCP.
 
-| Tool | Endpoint (TBD) | Notes |
+| Tool | Resource | Notes |
 |------|----------|-------|
-| `link_tc_to_jira` | `POST /test_cases/{id}/requirements` | Attach Jira key sebagai requirement |
-| `list_tc_for_requirement` | `GET /requirements/{jiraKey}/test_cases` | Reverse lookup |
-| `coverage_report` | Custom aggregation | "Which Jira issues belum punya TC?" |
+| `link_tc_to_jira` | Test Cases (Requirements field) | Append Jira key |
+| `list_tc_for_requirement` | Test Cases (filter) | Reverse lookup by Jira key |
+| `coverage_report` | Custom aggregation | "Which Jira issues belum punya TC?" — combo dengan Atlassian MCP |
 
 **Estimated effort:** 2-3 jam
-**Risk:** Medium (tergantung apakah TMS punya native Jira link field atau pakai tag)
+**Risk:** Medium (Phase 0 perlu confirm shape field Requirements)
 
 ---
 
@@ -402,13 +398,9 @@ Setelah MVP deploy, onboarding new user steps:
 
 ## 13. References & Resources
 
-- **MCP Specification:** https://spec.modelcontextprotocol.io
-- **Vercel MCP Adapter:** https://github.com/vercel/mcp-adapter
-- **Testsigma API Docs (automation platform — beda product):** https://testsigma.com/docs/api/overview/
-- **Testsigma TMS docs:** https://testsigma.com/docs/test-management/
-- **Manage Test Cases di TMS:** https://testsigma.com/docs/test-management/test-cases/manage-test-cases/
-- **API Keys (lokasi generate di TMS):** Settings → API Keys (perlu konfirmasi apakah API key TMS = automation, atau key terpisah)
-- **Atlassian MCP:** Already connected (Jira + Confluence)
+Semua source URL (Testsigma docs, MCP spec, Atlassian Marketplace listing) dikonsolidasi di [`docs/REFERENCE.md` §9 Source Documents](./docs/REFERENCE.md#9-source-documents). File ini hanya menyimpan link planning/process:
+
+- **Atlassian MCP:** Already connected (Jira + Confluence) — referenced di Phase 3 + 5
 
 ---
 
