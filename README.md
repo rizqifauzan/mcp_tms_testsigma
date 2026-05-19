@@ -10,13 +10,14 @@ Custom MCP server untuk integrasi **Testsigma Test Management** (`test-managemen
 |---|---|
 | [`PROJECT_PLAN.md`](./PROJECT_PLAN.md) | Sprint plan, phases, timeline, risks, decisions |
 | [`docs/REFERENCE.md`](./docs/REFERENCE.md) | **Single source of truth** — product facts, entity model, API spec, open questions |
+| [`docs/PHASE_0_DISCOVERY.md`](./docs/PHASE_0_DISCOVERY.md) | Phase 0 playbook + capture template (run `scripts/probe.sh` with your API key) |
 
 **Rule of consistency:** Saat ada fakta baru tentang Testsigma TMS (endpoint, field, behavior), update `docs/REFERENCE.md` dulu. Plan, code, dan tool descriptions harus refer ke sana — jangan duplikasi fakta di tempat lain.
 
 ## Status
 
 - [x] Plan v1.0 + reference consolidated
-- [ ] Phase 0 — API discovery (blocker for coding)
+- [~] Phase 0 — API discovery (blocker for coding) — unauthenticated probing done; awaiting user to run `scripts/probe.sh` with API key, see [`PHASE_0_DISCOVERY.md`](./docs/PHASE_0_DISCOVERY.md)
 - [ ] Phase 1 — Read-only tools
 - [ ] Phase 2 — Full CRUD
 - [ ] Phase 3 — Jira combo

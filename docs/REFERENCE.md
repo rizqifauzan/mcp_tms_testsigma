@@ -3,7 +3,7 @@
 > Single source of truth untuk semua fakta yang dipakai di `PROJECT_PLAN.md` dan implementasi. Update file ini saat ada penemuan baru (terutama dari Phase 0 API discovery). Plan dan code wajib konsisten dengan file ini.
 
 **Last verified:** 2026-05-19
-**Status:** Pre-implementation (Phase 0 belum dijalankan)
+**Status:** Phase 0 in progress — unauthenticated probing done, awaiting user API key for full capture (lihat [`PHASE_0_DISCOVERY.md`](./PHASE_0_DISCOVERY.md))
 
 ---
 
@@ -106,11 +106,26 @@ Workspace / Org
 
 ## 4. REST API
 
-### ⚠️ Status: Public API spec NOT FOUND
-Public docs untuk TMS API tipis. Yang ditemukan:
-- `https://app.testsigma.com/api/v1/projects` — ini **automation platform**, bukan TMS
-- TMS-specific REST endpoints belum dikonfirmasi di docs publik
-- Tidak ada Swagger/OpenAPI yang ter-publish
+### ✅ Confirmed via Phase 0 unauthenticated probing (2026-05-19)
+
+| Fact | Evidence |
+|---|---|
+| **Base URL** | `https://test-management.testsigma.com/api/v1/` |
+| **Auth header** | `Authorization` (canonical). Sending only `X-API-Key` triggers the "no header" branch. |
+| **Auth scheme** | Almost certainly `Bearer <API_KEY>` per official Testsigma convention; must confirm with real key. |
+| **API versioning** | Only `v1` exists. `/api/v2/*`, `/api/v3/*`, `/api/v4/*` all return 404. |
+| **Error envelope** | JSON: `{"code": <int>, "message": <string>}` |
+| **Error variants on 401** | Header present → `Authorization header required` (55 bytes). Header absent → `map[error:Authorization header required]` (66 bytes, Go map repr → backend likely Go). |
+| **Request ID** | Every response carries `x-request-id: <uuid>`. Useful for support tickets. |
+| **OPTIONS preflight** | Also auth-gated → no public CORS. Server-to-server only; browser MCP would need a proxy. |
+| **Swagger** | `/api/v1/swagger.json` exists but auth-gated (401). User MUST fetch this with real key first — could short-circuit the rest of Phase 0. |
+| **GraphQL hint** | `/api/v1/graphql` returns 401 (not 404). REST is primary, but GraphQL may exist. |
+| **Path style** | TBD (snake vs camel). Both `/test_cases` and `/testcases` return 401 — auth gate fires before route resolution, so we can't distinguish real from bogus paths without a key. |
+
+### ⚠️ Status: Public TMS API spec STILL NOT INDEXED
+- `https://app.testsigma.com/api/v1/projects` is the **automation platform**, not TMS
+- TMS swagger is auth-gated, not public
+- testsigmahq/testsigma-docs GitHub repo has no TMS-specific endpoint reference
 
 ### Discovery plan (Phase 0)
 1. Login ke `test-management.testsigma.com`, buka Chrome DevTools → Network → filter `Fetch/XHR`
@@ -137,10 +152,12 @@ Public docs untuk TMS API tipis. Yang ditemukan:
    - Pagination style (offset/cursor/page)
    - Status codes yang mungkin
 
-### Hipotesis (perlu diverifikasi)
-- Base URL: `https://test-management.testsigma.com/api/v1/...` (mirror dari automation platform pattern)
-- Resources kemungkinan plural snake_case atau camelCase: `/projects`, `/test_cases` atau `/testCases`
-- ID-based: `/projects/{id}`, `/test_cases/{id}`
+### Hipotesis (status update)
+- ✅ Base URL `/api/v1/` — **confirmed**
+- ⏳ Resource path style snake vs camel — **inconclusive without API key** (auth gate fires before routing)
+- ⏳ ID-based vs slug-based — TBD
+- ⏳ Pagination shape — TBD
+- ⏳ Whether TMS exposes a Swagger doc once authenticated — **highly probable** (`/api/v1/swagger.json` returns 401, not 404)
 
 ---
 
@@ -236,13 +253,13 @@ Errors: 401, 404, 429
 
 ## 8. Known Limitations & Open Questions
 
-| # | Question | Impact | How to resolve |
-|---|---|---|---|
-| 1 | API key TMS = automation key, atau terpisah? | Critical | Phase 0: cek Settings → API Keys di UI TMS |
-| 2 | API base URL exact path? | Critical | Phase 0: DevTools Network |
-| 3 | API key scope penuh atau limited? | High | Phase 0: `curl` test semua resource |
-| 4 | Pagination style? | Medium | Phase 0: inspect response shape |
-| 5 | Rate limits? | Medium | Phase 0: cek docs / response headers (`X-RateLimit-*`) |
+| # | Question | Status | Impact | How to resolve |
+|---|---|---|---|---|
+| 1 | API key TMS = automation key, atau terpisah? | Open | Critical | Phase 0: cek Settings → API Keys di UI TMS |
+| 2 | API base URL exact path? | ✅ **Closed** — `/api/v1/` on `test-management.testsigma.com` | Critical | — |
+| 3 | API key scope penuh atau limited? | Open | High | Phase 0: `curl` test semua resource (see [`PHASE_0_DISCOVERY.md`](./PHASE_0_DISCOVERY.md)) |
+| 4 | Pagination style? | Open | Medium | Phase 0: inspect response shape |
+| 5 | Rate limits? | Open | Medium | Phase 0: cek docs / response headers (`X-RateLimit-*`) |
 | 6 | Step attachment upload flow? | Low (skip MVP) | Defer; tool tanpa attachment dulu |
 | 7 | Custom field schema discovery? | Medium | Inspect per-project response payload |
 | 8 | Project ID vs slug di URL? | Low | DevTools inspection |
