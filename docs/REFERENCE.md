@@ -383,7 +383,7 @@ All endpoints are under base `https://test-management.testsigma.com/api/v1`. Aut
 | 2 | API base URL exact path? | ✅ **Closed** — `/api/v1/` on `test-management.testsigma.com` | Critical | — |
 | 3 | Endpoints + body shapes for all resources? | ✅ **Closed** — Official Postman collection covers full CRUD for Project, Folder, Test Case, Step Group, Test Run, Test Plan; plus 5 Settings lookup endpoints | High | — |
 | 4 | Pagination style? | ✅ **Closed** — cursor-based, base64-encoded JSON. Param: `?page_size=N`. Returns `page_info: {page_size, total_count, next, prev}` | Medium | — |
-| 5 | Rate limits? | **Partially open** — `x-tms-api-limit: 10` header observed, window unit unknown | Medium | Empirically measure during Phase 1 — burst test 11 requests in 1s vs 1m |
+| 5 | Rate limits? | ✅ **Closed (2026-05-19)** — measured empirically during Phase 1 E2E: ~10 req/sec hard cap. Burst of 5 parallel lookup fetches combined with prior in-flight calls returns HTTP 500 with body `{"message": "rate limit exceeded"}` (NOT the standard 429). Client should sequentialize bulk operations or add small delay. | Medium | — |
 | 6 | Steps schema? | ✅ **Closed** — two template types. `TCD` = single string. `STEPS` = `individual_steps[]` structured. | High | — |
 | 7 | Lookup tables for status/priority/type? | ✅ **Closed** — root-level endpoints under `/test_cases/{statuses,priorities,types,automation_types}` and `/test_runs/statuses` | High | — |
 | 8 | Test Suites? | ✅ **Closed** — not a first-class API resource. Use test run `selection_type` instead. | Medium | — |

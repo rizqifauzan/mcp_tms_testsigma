@@ -1,20 +1,20 @@
 import { z } from "zod";
-import type { TmsClient, PaginatedResponse } from "../client.ts";
+import type { TmsClient } from "../client.ts";
 import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.ts";
 
 interface TestPlan {
   id: string;
   human_id?: string | null;
-  name: string;
+  title: string;
   description?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: number;
+  updated_at?: number;
   [k: string]: unknown;
 }
 
 export const listTestPlansInputSchema = {
   project_id: z.string().min(1).describe("Project UUID"),
-  search: z.string().optional(),
+  search: z.string().optional().describe("Substring match on test plan title"),
   page_size: z.number().int().min(1).max(100).optional(),
   cursor: z.string().optional(),
 };
@@ -26,21 +26,21 @@ export async function listTestPlans(
   rawArgs: unknown,
 ): Promise<HybridResponse> {
   const args = ListTestPlansArgs.parse(rawArgs);
-  const res = await client.get<PaginatedResponse<TestPlan>>(
+  const res = await client.getList<TestPlan>(
     `/projects/${encodeURIComponent(args.project_id)}/test_plans`,
     {
-      name__CONTAINS: args.search,
+      title__CONTAINS: args.search,
       page_size: args.page_size,
       cursor: args.cursor,
     },
   );
 
   const md = mdTable(
-    ["Human ID", "Name", "UUID"],
-    res.data.map((p) => [p.human_id ?? "—", p.name, p.id]),
+    ["Human ID", "Title", "UUID"],
+    res.items.map((p) => [p.human_id ?? "—", p.title, p.id]),
   ) + paginationFooter(res.page_info);
 
-  return hybrid(res, md);
+  return hybrid({ test_plans: res.items, page_info: res.page_info }, md);
 }
 
 export const getTestPlanInputSchema = {
@@ -55,17 +55,17 @@ export async function getTestPlan(
   rawArgs: unknown,
 ): Promise<HybridResponse> {
   const args = GetTestPlanArgs.parse(rawArgs);
-  const plan = await client.get<TestPlan>(
+  const plan = await client.getOne<TestPlan>(
     `/projects/${encodeURIComponent(args.project_id)}/test_plans/${encodeURIComponent(args.test_plan_id)}`,
   );
 
   const md = [
-    `**${plan.human_id ?? plan.id} — ${plan.name}**`,
+    `**${plan.human_id ?? plan.id} — ${plan.title}**`,
     plan.description ? `\n${plan.description}` : "",
     `\nUUID: \`${plan.id}\``,
   ]
     .filter(Boolean)
     .join("\n");
 
-  return hybrid(plan, md);
+  return hybrid({ test_plan: plan }, md);
 }

@@ -16,7 +16,7 @@ Custom MCP server untuk integrasi **Testsigma Test Management** (`test-managemen
 
 - [x] Plan v1.0 + reference consolidated
 - [x] **Phase 0 — API discovery** ✅ done via official Testsigma Postman collection. Full endpoint catalog in [`docs/REFERENCE.md` §5](./docs/REFERENCE.md#5-endpoints-reference). Phase 5 (Jira link) dropped — not in API.
-- [ ] **Phase 1 — Read-only tools** 🚧 in progress (10 tools registered, awaiting first deploy + end-to-end test with real API key)
+- [x] **Phase 1 — Read-only tools** ✅ 10 tools implemented + verified end-to-end against real TMS data (2026-05-19). Pending Vercel deploy + Claude Code connection test.
 - [ ] Phase 2 — Full CRUD (TC + folders; step groups dropped)
 - [ ] Phase 3 — Jira combo (orchestration only)
 - [ ] Phase 4 — Test plans & runs (with multipart result marking + JUnit import)

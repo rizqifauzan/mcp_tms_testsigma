@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TmsClient, PaginatedResponse } from "../client.ts";
+import type { TmsClient } from "../client.ts";
 import { memo } from "../cache.ts";
 import { LOOKUP_CACHE_TTL_MS } from "../config.ts";
 import { hybrid, mdTable, type HybridResponse } from "../format.ts";
@@ -7,6 +7,8 @@ import { hybrid, mdTable, type HybridResponse } from "../format.ts";
 interface LookupRow {
   id: string;
   name: string;
+  alias?: string | null;
+  order?: number;
   [k: string]: unknown;
 }
 
@@ -23,11 +25,8 @@ const KINDS = Object.keys(LOOKUP_PATHS) as LookupKind[];
 
 async function fetchLookup(client: TmsClient, kind: LookupKind, apiKey: string): Promise<LookupRow[]> {
   return memo(`${apiKey}::${kind}`, LOOKUP_CACHE_TTL_MS, async () => {
-    const res = await client.get<PaginatedResponse<LookupRow> | LookupRow[]>(
-      LOOKUP_PATHS[kind],
-      { page_size: 100 },
-    );
-    return Array.isArray(res) ? res : res.data;
+    const res = await client.getList<LookupRow>(LOOKUP_PATHS[kind], { page_size: 100 });
+    return res.items;
   });
 }
 
@@ -45,9 +44,12 @@ export function makeListLabelOptions(apiKey: string) {
     const args = ListLabelOptionsArgs.parse(rawArgs);
     const selected = args.kinds && args.kinds.length > 0 ? args.kinds : KINDS;
 
-    const results = await Promise.all(
-      selected.map(async (kind) => ({ kind, rows: await fetchLookup(client, kind, apiKey) })),
-    );
+    // Sequential, not parallel: TMS rate-limits ~10 req/sec and bursting all 5
+    // lookups in parallel hits the limit when combined with other in-flight calls.
+    const results: Array<{ kind: LookupKind; rows: LookupRow[] }> = [];
+    for (const kind of selected) {
+      results.push({ kind, rows: await fetchLookup(client, kind, apiKey) });
+    }
 
     const structured: Record<string, LookupRow[]> = {};
     const mdSections: string[] = [];

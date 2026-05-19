@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TmsClient, PaginatedResponse } from "../client.ts";
+import type { TmsClient } from "../client.ts";
 import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.ts";
 
 interface Project {
@@ -7,8 +7,8 @@ interface Project {
   name: string;
   description?: string | null;
   human_id_prefix?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  created_at?: number;
+  updated_at?: number;
   [k: string]: unknown;
 }
 
@@ -25,7 +25,7 @@ export async function listProjects(
   rawArgs: unknown,
 ): Promise<HybridResponse> {
   const args = ListProjectsArgs.parse(rawArgs);
-  const res = await client.get<PaginatedResponse<Project>>("/projects", {
+  const res = await client.getList<Project>("/projects", {
     page_size: args.page_size,
     cursor: args.cursor,
     name__CONTAINS: args.search,
@@ -33,10 +33,10 @@ export async function listProjects(
 
   const md = mdTable(
     ["ID Prefix", "Name", "ID"],
-    res.data.map((p) => [p.human_id_prefix ?? "—", p.name, p.id]),
+    res.items.map((p) => [p.human_id_prefix ?? "—", p.name, p.id]),
   ) + paginationFooter(res.page_info);
 
-  return hybrid(res, md);
+  return hybrid({ projects: res.items, page_info: res.page_info }, md);
 }
 
 export const getProjectInputSchema = {
@@ -50,7 +50,7 @@ export async function getProject(
   rawArgs: unknown,
 ): Promise<HybridResponse> {
   const args = GetProjectArgs.parse(rawArgs);
-  const project = await client.get<Project>(`/projects/${encodeURIComponent(args.project_id)}`);
+  const project = await client.getOne<Project>(`/projects/${encodeURIComponent(args.project_id)}`);
 
   const md = [
     `**${project.name}** (${project.human_id_prefix ?? "—"})`,
@@ -60,5 +60,5 @@ export async function getProject(
     .filter(Boolean)
     .join("\n");
 
-  return hybrid(project, md);
+  return hybrid({ project }, md);
 }

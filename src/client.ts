@@ -20,8 +20,8 @@ export interface PageInfo {
   prev: string | null;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
+export interface ListResult<T> {
+  items: T[];
   page_info: PageInfo;
 }
 
@@ -38,6 +38,17 @@ function buildUrl(path: string, query?: Query): string {
   return url.toString();
 }
 
+interface EnvelopeList {
+  message?: string;
+  data: Record<string, unknown[]>;
+  page_info: PageInfo;
+}
+
+interface EnvelopeOne {
+  message?: string;
+  data: Record<string, unknown>;
+}
+
 export class TmsClient {
   private readonly apiKey: string;
 
@@ -45,7 +56,26 @@ export class TmsClient {
     this.apiKey = apiKey;
   }
 
-  async get<T>(path: string, query?: Query): Promise<T> {
+  /**
+   * GET a list endpoint. The TMS envelope wraps the array under a single
+   * `data.<resource_plural>` key (e.g. `data.projects`). This unwraps it.
+   */
+  async getList<T>(path: string, query?: Query): Promise<ListResult<T>> {
+    const env = await this.request<EnvelopeList>(path, query);
+    const items = takeOnlyValue(env.data) as T[];
+    return { items, page_info: env.page_info };
+  }
+
+  /**
+   * GET a detail endpoint. The TMS envelope wraps the object under a single
+   * `data.<resource_singular>` key (e.g. `data.project`).
+   */
+  async getOne<T>(path: string): Promise<T> {
+    const env = await this.request<EnvelopeOne>(path);
+    return takeOnlyValue(env.data) as T;
+  }
+
+  private async request<T>(path: string, query?: Query): Promise<T> {
     const url = buildUrl(path, query);
     const res = await fetch(url, {
       method: "GET",
@@ -65,6 +95,17 @@ export class TmsClient {
     }
     return body as T;
   }
+}
+
+function takeOnlyValue(obj: Record<string, unknown>): unknown {
+  const keys = Object.keys(obj);
+  if (keys.length === 0) {
+    throw new Error("TMS response data envelope was empty");
+  }
+  if (keys.length > 1) {
+    throw new Error(`TMS response data envelope had multiple keys: ${keys.join(", ")}`);
+  }
+  return obj[keys[0]!];
 }
 
 function extractErrorMessage(body: unknown): string | null {

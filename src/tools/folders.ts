@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { TmsClient, PaginatedResponse } from "../client.ts";
+import type { TmsClient } from "../client.ts";
 import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.ts";
 
 interface Folder {
@@ -7,6 +7,8 @@ interface Folder {
   name: string;
   parent_folder_id: string | null;
   project_id?: string;
+  order?: number;
+  children?: Folder[];
   [k: string]: unknown;
 }
 
@@ -23,15 +25,15 @@ export async function listFolders(
   rawArgs: unknown,
 ): Promise<HybridResponse> {
   const args = ListFoldersArgs.parse(rawArgs);
-  const res = await client.get<PaginatedResponse<Folder>>(
+  const res = await client.getList<Folder>(
     `/projects/${encodeURIComponent(args.project_id)}/folders`,
     { page_size: args.page_size, cursor: args.cursor },
   );
 
   const md = mdTable(
     ["Name", "Folder ID", "Parent"],
-    res.data.map((f) => [f.name, f.id, f.parent_folder_id ?? "(root)"]),
+    res.items.map((f) => [f.name, f.id, f.parent_folder_id ?? "(root)"]),
   ) + paginationFooter(res.page_info);
 
-  return hybrid(res, md);
+  return hybrid({ folders: res.items, page_info: res.page_info }, md);
 }
