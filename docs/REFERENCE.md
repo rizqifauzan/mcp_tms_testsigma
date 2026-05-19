@@ -135,18 +135,23 @@ Step groups can be embedded into a test case's `individual_steps` via `step_type
 
 ## 3. Authentication
 
-### Confirmed
-- **Method:** `Authorization: Bearer <TOKEN>` for every request
-- **Two token types both work:**
-  1. **API Key** (preferred for MCP) — generated via TMS UI **Settings → API Keys** panel. Long-lived. User-confirmed this panel exists (2026-05-19). To verify probe behavior, see [`PHASE_0_DISCOVERY.md`](./PHASE_0_DISCOVERY.md).
-  2. **JWT session token** — short-lived, pulled from a logged-in browser session. Format observed: `iss=TMS`, `sub=<user_uuid>`, `iat=<epoch>`, no explicit `exp` claim in payload. Useful for local dev / one-off probing.
-- **MCP distribution strategy:** each QA team member generates their own API key from TMS Settings, configures it in their Claude Code via `X-Testsigma-Key` header. Server forwards as `Authorization: Bearer <key>` to TMS. Audit trail per user preserved.
-- **Rate limit headers visible:** `x-tms-api-limit: 10`, `x-tms-api-remaining: <decreasing>`, `x-tms-api-reset: <negative_number>` (semantics unclear; window unit not documented — must observe empirically)
+### Decision (2026-05-19)
+**MCP server accepts ONLY long-lived API keys.** JWT session tokens are usable for dev probing but NOT supported as a user-facing auth path in the deployed MCP. Each QA team member generates their own API key from TMS UI → Settings → API Keys → "Generate new API Key".
 
-### Still unclear
-- Whether the same API key works against `app.testsigma.com` automation platform (separate question; not needed for TMS MCP)
-- Rate limit window: 10 requests per **what** (second/minute/hour)? Empirically determine during Phase 1 testing.
-- Whether API keys are scoped (per-project, per-action) or full-access. Postman doc doesn't mention scopes — assume full.
+### Confirmed
+- **Method:** `Authorization: Bearer <API_KEY>` on every request
+- **Source:** TMS UI Settings → API Keys panel (user-confirmed 2026-05-19)
+- **MCP distribution:** users paste their API key into Claude Code config via `X-Testsigma-Key` HTTP header. The Vercel function rewrites that as `Authorization: Bearer <key>` to TMS. Server stateless — no key stored.
+- **Audit:** because each user uses their own key, TMS-side audit log attributes actions to the correct user.
+- **Rate limit headers visible:** `x-tms-api-limit: 10`, `x-tms-api-remaining: <decreasing>`, `x-tms-api-reset: <negative_number>` (semantics unclear; window unit not documented — measure empirically in Phase 1)
+
+### Reference only (not used by MCP)
+- **JWT session token** — captured from a logged-in browser session. HS256, payload `{iss:"TMS", sub:"<user_uuid>", iat, nbf, id_session_re_validate:0}`. Short-lived. Same `Authorization: Bearer` header works. Useful for local dev when generating an API key is inconvenient.
+
+### Still unclear (measure during Phase 1)
+- Rate limit window: 10 requests per **what** (second/minute/hour)?
+- Whether API keys are scoped or full-access. Postman doc doesn't mention scopes — assume full until proven otherwise.
+- Whether the same API key works against `app.testsigma.com` automation platform (not needed for this MCP).
 
 ---
 

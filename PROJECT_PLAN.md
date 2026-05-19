@@ -263,10 +263,9 @@ testsigma-mcp/
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| Testsigma API rate limit hit saat bulk create | Medium | Medium | Implement queue dengan 200ms delay antar request |
-| TMS API tidak punya public Swagger / docs minim | High | High | Phase 0 reverse-engineer via DevTools, dokumentasi internal |
-| API key TMS belum tentu support semua endpoint (mungkin scoped untuk integration tertentu saja) | Medium | High | Validasi di Phase 0 dengan `curl` test setiap resource — abort kalau ternyata cuma session cookie auth |
-| TMS UI pakai session cookie, bukan API key (worst case) | Medium | Critical | Mitigation: explore kalau ada PAT/token endpoint, atau pivot ke browser-based MCP |
+| Testsigma API rate limit hit saat bulk create | Medium | Medium | Empirically measure window (Phase 1); implement queue dengan delay kalau perlu |
+| ~~TMS API tidak punya public Swagger~~ | — | — | ✅ Resolved Phase 0 — official Postman doc covers everything |
+| ~~API key scoped / session cookie only~~ | — | — | ✅ Resolved Phase 0 — long-lived API key works against all endpoints needed |
 | API key bocor di logs Vercel | Low | High | Never log auth headers, redact di error message |
 | Tool description gak di-trigger Claude dengan tepat | Medium | Medium | Iterate tool description, kasih banyak example di description |
 | Partial failure di bulk op | High | Medium | Return detailed summary (success/fail count + reasons) |
@@ -327,9 +326,9 @@ testsigma-mcp/
 Setelah MVP deploy, onboarding new user steps:
 
 1. **Generate Testsigma API Key**
-   - Login ke `app.testsigma.com`
-   - Settings → API Keys → Generate New Key
-   - Copy & simpan (sekali tampil)
+   - Login ke `test-management.testsigma.com` (the TMS product — NOT `app.testsigma.com` automation platform)
+   - Settings → API Keys → Generate New Key → kasih nama (e.g. `claude-mcp`) → Generate
+   - Copy key & simpan (sekali tampil)
 
 2. **Connect di Claude Code**
    - Web: Settings → Connectors → Add Custom MCP
