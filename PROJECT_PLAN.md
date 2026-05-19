@@ -142,8 +142,8 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 | `delete_test_case` | Test Cases | Delete with confirmation prompt |
 | `create_folder` | Folders | Body: `{name, order}`. Parent set via `move_folder` |
 | `update_folder` / `delete_folder` / `move_folder` | Folders | CRUD + reparent via `POST /folders/{id}/move` |
-| `add_step` / `update_step` / `delete_step` | Test Cases | **Only when TC is `template_type: STEPS`.** Granular ops via read-modify-write on `individual_steps[]` with stale-read guard (compare `updated_at`). For `TCD` templates these tools return a clear error pointing user to `update_test_case`. |
-| `create_step_group` / `update_step_group` / `delete_step_group` | Step Groups | Reusable bundles. Stretch goal — drop if not used by GROW squad. |
+| `add_step` / `update_step` / `delete_step` | Test Cases | **Only when TC is `template_type: STEPS`.** For `TCD` templates (GROW default) these return a helpful error pointing to `update_test_case`. Implementation: read-modify-write on `individual_steps[]` with stale-read guard. |
+| `create_step_group` / `update_step_group` / `delete_step_group` | Step Groups | **Stretch / out of MVP** — GROW squad confirmed using TCD only. Add if a future need arises. |
 
 **Estimated effort:** 3-4 jam
 **Risk:** Medium (write ops, butuh validation + idempotency)
