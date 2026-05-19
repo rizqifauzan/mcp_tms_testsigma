@@ -136,20 +136,23 @@ Step groups can be embedded into a test case's `individual_steps` via `step_type
 ## 3. Authentication
 
 ### Decision (2026-05-19)
-**MCP server accepts ONLY long-lived API keys.** JWT session tokens are usable for dev probing but NOT supported as a user-facing auth path in the deployed MCP. Each QA team member generates their own API key from TMS UI → Settings → API Keys → "Generate new API Key".
+**MCP server accepts long-lived TMS API keys.** Each QA team member generates their own from TMS UI → Settings → API Keys → "Generate new API Key".
 
-### Confirmed
+### Token format
+TMS API keys are **issued as HS256-signed JWTs** with no `exp` claim (long-lived). They look like JWT session tokens but don't expire. Payload structure:
+```
+{ iss: "TMS", sub: "<user_uuid>", iat: <epoch>, nbf: <epoch>, id_session_re_validate: 0 }
+```
+A browser session JWT and an API key look identical in shape — both work with `Authorization: Bearer`. The only practical difference is lifetime: session JWTs rotate, API keys persist until manually revoked.
+
+### Confirmed (verified Phase 1 E2E, 2026-05-19)
 - **Method:** `Authorization: Bearer <API_KEY>` on every request
-- **Source:** TMS UI Settings → API Keys panel (user-confirmed 2026-05-19)
+- **Source:** TMS UI Settings → API Keys panel
 - **MCP distribution:** users paste their API key into Claude Code config via `X-Testsigma-Key` HTTP header. The Vercel function rewrites that as `Authorization: Bearer <key>` to TMS. Server stateless — no key stored.
-- **Audit:** because each user uses their own key, TMS-side audit log attributes actions to the correct user.
-- **Rate limit headers visible:** `x-tms-api-limit: 10`, `x-tms-api-remaining: <decreasing>`, `x-tms-api-reset: <negative_number>` (semantics unclear; window unit not documented — measure empirically in Phase 1)
+- **Audit:** because each user uses their own key, TMS-side audit log attributes actions to the correct user (`sub` claim in the JWT = user UUID).
+- **Rate limit:** ~10 req/sec — see §8 #5.
 
-### Reference only (not used by MCP)
-- **JWT session token** — captured from a logged-in browser session. HS256, payload `{iss:"TMS", sub:"<user_uuid>", iat, nbf, id_session_re_validate:0}`. Short-lived. Same `Authorization: Bearer` header works. Useful for local dev when generating an API key is inconvenient.
-
-### Still unclear (measure during Phase 1)
-- Rate limit window: 10 requests per **what** (second/minute/hour)?
+### Still unclear
 - Whether API keys are scoped or full-access. Postman doc doesn't mention scopes — assume full until proven otherwise.
 - Whether the same API key works against `app.testsigma.com` automation platform (not needed for this MCP).
 
@@ -390,7 +393,7 @@ All endpoints are under base `https://test-management.testsigma.com/api/v1`. Aut
 | 9 | Jira link API? | ✅ **Closed (negative)** — not exposed. Dropped from MVP. | Medium | — |
 | 10 | `label_ids` vs `label_names` inconsistency? | Open | Low | First write test will reveal — Postman example for create_test_case uses string name (`"Flight_testcase"`) inside `label_ids`. Could be auto-create-by-name. |
 | 11 | `step_type` enum complete values? | Open | Low | Capture during a UI action that adds a step group reference inside a TC |
-| 12 | JWT vs API key lifetime difference? | Open | Medium | Generate API key in TMS UI, observe behavior over days |
+| 12 | JWT vs API key lifetime difference? | ✅ **Closed (2026-05-19)** — TMS API keys ARE HS256-signed JWTs with no `exp` claim (long-lived). Same shape as browser session JWTs but persist until revoked. See §3. | Medium | — |
 | 13 | Rate limit reset header semantics (negative number)? | Open | Low | Acknowledge as undocumented; ignore in client |
 | 14 | Step attachment upload flow? | Open (skip MVP) | Low | Defer; tools tanpa attachment dulu |
 | 15 | Custom field schema discovery? | Open | Low | Inspect per-project payload jika nanti muncul `custom_fields` field |
