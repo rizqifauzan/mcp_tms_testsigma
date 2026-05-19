@@ -1,0 +1,19 @@
+# Phase 0 probe outputs — may contain project names, IDs, or tokens
+tmp/
+docs/swagger.json
+docs/swagger.*.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+.envrc
+
+# Node (for upcoming Phase 1)
+node_modules/
+.next/
+.vercel/
+dist/
+build/
+*.log
+.DS_Store
