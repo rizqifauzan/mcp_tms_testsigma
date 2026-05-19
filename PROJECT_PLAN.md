@@ -89,26 +89,26 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 
 ## 3. Scope Breakdown
 
-### Phase 0 — API Discovery (Confidence: 🟡 Medium) ⭐ NEW
-**Goal:** Reverse-engineer TMS REST API karena public docs tipis. Resolve open questions di [REFERENCE §8](./docs/REFERENCE.md#8-known-limitations--open-questions).
+### Phase 0 — API Discovery ✅ DONE (2026-05-19)
+**Goal:** Resolve all blockers for coding. Endpoint catalog, auth, schemas.
 
-**Approach:** DevTools Network capture untuk setiap action — full checklist ada di [REFERENCE §4 Discovery plan](./docs/REFERENCE.md#discovery-plan-phase-0). Hasil capture diisi ke [REFERENCE §5 Endpoints Reference](./docs/REFERENCE.md#5-endpoints-reference).
+**Outcome:** Found the official Testsigma Postman collection (https://documenter.getpostman.com/view/40565679/2sB2xChp9y) and ingested all 44 documented endpoints into [REFERENCE §5](./docs/REFERENCE.md#5-endpoints-reference). Combined with authenticated probe data, this closes every blocker.
 
-**Estimated effort:** 2-3 jam
-**Risk:** Medium (kalau API key TMS gak tersedia / butuh session cookie, blocker total — lihat fallback risk di REFERENCE §3)
-**Exit criteria:**
-- Section 5 di REFERENCE.md terisi minimal untuk projects, folders, test_cases (read + create)
-- Auth flow confirmed via `curl` test
-- Open questions #1-#4 di REFERENCE §8 closed
+**What's confirmed:**
+- ✅ Base URL, auth (`Authorization: Bearer <api_key>` from TMS Settings → API Keys panel)
+- ✅ Full CRUD for: Project, Folder, Test Case, Step Group, Test Run, Test Plan
+- ✅ Lookup endpoints (root-level, not project-nested): `/test_cases/{statuses,priorities,types,automation_types}`, `/test_runs/statuses`
+- ✅ TC has TWO templates: `TCD` (text blob) and `STEPS` (structured `individual_steps[]`)
+- ✅ Step Groups are a new first-class entity (reusable step bundles)
+- ✅ Run results via multipart/form-data PUT; JUnit XML import endpoint
+- ✅ Cursor pagination + `__operator` filter syntax
 
-**Phase 0 status (2026-05-19):**
-- ✅ Read endpoints documented for projects, folders, test_cases, test_runs, labels, users (REFERENCE §5)
-- ✅ Auth confirmed working via JWT bearer; Q2/Q4 closed, Q3 partially closed (reads only)
-- ❌ Q1 still open: no long-lived API key confirmed — user must check TMS UI Settings panel
-- ❌ Writes not yet captured (defer to DevTools during real create/update actions in UI)
-- ❌ Lookup table endpoint (status/priority/type → name) not discovered — **blocker for Phase 2 `create_test_case`**
-- ❌ Requirements/Jira link API surface not discovered — Phase 5 will need extra capture
-- ❌ Test Suites endpoint not discovered — Phase 4 design may need adjustment
+**What's dropped (negative findings):**
+- ❌ Test Suites — not in API. Use run `selection_type: STATIC` with `static_selection_filters` instead.
+- ❌ Requirements / Jira link — not in API. Phase 5 dropped from plan (see below).
+- ❌ Custom Fields, TC Attachments, Comments, History — not in API.
+
+**Minor open items (don't block Phase 1):** rate limit window unit, `label_ids` vs `label_names` semantics, full `step_type` enum values. Tracked in [REFERENCE §8](./docs/REFERENCE.md#8-known-limitations--open-questions).
 
 ### Phase 1 — Read-Only Tools (Confidence: 🟢 High)
 **Goal:** User bisa browse TMS data dari Claude tanpa buka UI.
@@ -120,32 +120,30 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 | `list_projects` | Projects | "Show me my Testsigma TMS projects" |
 | `get_project` | Projects | "Detail project GROW" |
 | `list_folders` | Folders | "Show folder tree GROW" |
-| `list_test_cases` | Test Cases | "List test case di folder Voucher" |
-| `get_test_case` | Test Cases | "Show detail TC-1234 with steps" |
+| `list_test_cases` | Test Cases | "List test case di folder Voucher" (filter `?folder_id=`, `?search=`) |
+| `get_test_case` | Test Cases | "Show detail GR-7 with steps" (URL accepts human_id) |
 | `list_test_plans` | Test Plans | "What test plans di GROW?" |
 | `get_test_plan` | Test Plans | "Detail Regression Plan" |
-| `list_test_suites` | Test Suites | "What suites are in GROW?" |
-| `search_test_cases` | Test Cases | "Find test cases with 'voucher'" |
+| `list_test_runs` | Test Runs | "Show active test runs" |
+| `get_test_run` | Test Runs | "Status of GR-R-1" |
+| `list_step_groups` | Step Groups | "What reusable step groups exist?" |
+| `list_label_options` | Settings | Resolve status/priority/type names from UUID |
 
 **Estimated effort:** 2-3 jam
 **Risk:** Low (read-only, no destructive ops)
 
-### Phase 2 — Full Test Case CRUD (Confidence: 🟡 Medium — revised after Phase 0)
-**Goal:** Create/update/delete test case INCLUDING steps.
-
-> ⚠️ **Phase 0 finding invalidates the original design.** TMS stores `steps` and `expected_results` as **single newline-delimited strings** (template_type `TCD`), NOT as arrays of `{action, expected}`. There is no `/test_cases/{id}/steps` sub-resource. Granular step CRUD tools (`add_step`, `update_step`, `delete_step`) cannot be 1-call API operations — they would have to read-modify-write the whole `steps` string client-side, which is racy and fragile.
-
-**Revised tool set:**
+### Phase 2 — Full Test Case CRUD (Confidence: 🟢 High)
+**Goal:** Create/update/delete TC including steps. Both template types (TCD and STEPS) supported.
 
 | Tool | Resource | Behavior |
 |------|----------|----------|
-| `create_test_case` | Test Cases | Create with `title`, `description`, `preconditions`, `steps` (string), `expected_results` (string), `*_id` lookups, `folder_id`, `labels` |
-| `update_test_case` | Test Cases | Patch any field including full `steps` / `expected_results` replacement |
+| `create_test_case` | Test Cases | Body shape per [REFERENCE §5 Test Cases](./docs/REFERENCE.md#test-cases). Tool resolves status/priority/type names → UUIDs via Settings lookups (cached per session). Accept either `template_type: "TCD"` (steps as text) or `"STEPS"` (with `individual_steps[]`). |
+| `update_test_case` | Test Cases | Patch any field. Supports template switching. |
 | `delete_test_case` | Test Cases | Delete with confirmation prompt |
-| ~~`add_step` / `update_step` / `delete_step`~~ | — | **Dropped** — not granular at API level. May add as a UX convenience that does read-modify-write with explicit "stale-read" guard (deferred). |
-| `create_folder` | Folders | Organize TC ke folder baru |
-
-**Pre-requisite for Phase 2 coding:** The status/priority/type/automation_type lookup endpoint must be captured first (see [REFERENCE §5 Lookup tables](./docs/REFERENCE.md#lookup-tables-status--priority--type--automation_type)) — without it, `create_test_case` can't know valid UUIDs for those required fields.
+| `create_folder` | Folders | Body: `{name, order}`. Parent set via `move_folder` |
+| `update_folder` / `delete_folder` / `move_folder` | Folders | CRUD + reparent via `POST /folders/{id}/move` |
+| `add_step` / `update_step` / `delete_step` | Test Cases | **Only when TC is `template_type: STEPS`.** Granular ops via read-modify-write on `individual_steps[]` with stale-read guard (compare `updated_at`). For `TCD` templates these tools return a clear error pointing user to `update_test_case`. |
+| `create_step_group` / `update_step_group` / `delete_step_group` | Step Groups | Reusable bundles. Stretch goal — drop if not used by GROW squad. |
 
 **Estimated effort:** 3-4 jam
 **Risk:** Medium (write ops, butuh validation + idempotency)
@@ -172,33 +170,27 @@ User prompt → Claude orchestrator
 **Estimated effort:** 1 jam (testing + prompt engineering)
 **Risk:** Low (just orchestration)
 
-### Phase 4 — Test Plans & Runs (Confidence: 🟡 Medium) ⭐ REVISED
-**Goal:** Manage test plans (collection of TC) dan record manual run results.
-
-TMS = test **management**, bukan execution engine — "execution" di sini artinya update status manual (Pass/Fail/Blocked/Skip) per TC di test run. Entity hierarchy: lihat [REFERENCE §2](./docs/REFERENCE.md#2-entity-model--hierarchy) (Plans → Suites → TC; Runs adalah instance dari Plan).
+### Phase 4 — Test Plans & Runs (Confidence: 🟢 High — revised after Phase 0)
+**Goal:** Manage test plans dan record manual run results. No suite layer (suites don't exist in API; runs select TCs directly via `static_selection_filters`).
 
 | Tool | Resource | Notes |
 |------|----------|-------|
-| `create_test_plan` | Test Plans | Strategy + scope |
-| `add_suite_to_plan` | Test Plans | Plans contain Suites (BUKAN TC langsung) |
-| `start_test_run` | Test Runs | Instance of plan execution |
-| `update_run_result` | Test Runs | Mark TC Pass/Fail/Blocked/Skip + comment |
-| `get_run_summary` | Test Runs | Aggregate pass/fail count |
+| `create_test_plan` | Test Plans | Body: `{title, description, start_date, end_date, label_ids}` |
+| `complete_test_plan` | Test Plans | `POST /test_plans/{id}/complete` |
+| `list_runs_for_plan` | Test Plans | `GET /test_plans/{id}/test_runs` |
+| `start_test_run` | Test Runs | `selection_type` STATIC (explicit TC list) or DYNAMIC (filter at runtime) |
+| `assign_user_to_run_tc` | Test Runs | `PUT /test_runs/{id}/assign_user` |
+| `update_run_result` | Test Runs | Multipart PUT to `/test_runs/{id}/test_cases`. Mark Pass/Fail/Blocked/Skip + optional description + attachments |
+| `get_run_summary` | Test Runs | Aggregate from `test_run_status_summary` field on run detail |
+| `import_junit_results` | Test Runs | Optional stretch — `POST /junit-import/test-run/{run_id}` |
 
 **Estimated effort:** 3-4 jam
-**Risk:** Medium (state machine result, comment formatting)
+**Risk:** Low-Medium (multipart formatting + status resolution from `/test_runs/statuses` lookup)
 
-### Phase 5 — Requirements & Jira Traceability (Confidence: 🟡 Medium) ⭐ REVISED
-**Goal:** TMS native field "Requirements" = Jira issue keys (confirmed di [REFERENCE §2](./docs/REFERENCE.md#test-case-fields-confirmed-from-docs)). Two-way sync sudah ada di TMS — kita expose lewat MCP.
+### ~~Phase 5 — Requirements & Jira Traceability~~ — **DROPPED**
+**Rationale:** Phase 0 confirmed Testsigma's REST API does not expose the Requirements/Jira-link surface. The two-way sync is UI-only / handled by the Atlassian Marketplace add-on, not by REST endpoints we can call.
 
-| Tool | Resource | Notes |
-|------|----------|-------|
-| `link_tc_to_jira` | Test Cases (Requirements field) | Append Jira key |
-| `list_tc_for_requirement` | Test Cases (filter) | Reverse lookup by Jira key |
-| `coverage_report` | Custom aggregation | "Which Jira issues belum punya TC?" — combo dengan Atlassian MCP |
-
-**Estimated effort:** 2-3 jam
-**Risk:** Medium (Phase 0 perlu confirm shape field Requirements)
+**Alternative:** Phase 3 (Jira combo) already covers the realistic value — Claude can read Jira context and scaffold TCs. Users still link manually in the TMS UI when needed.
 
 ---
 
@@ -208,25 +200,24 @@ TMS = test **management**, bukan execution engine — "execution" di sini artiny
 
 | Day | Time | Activity |
 |-----|------|----------|
-| Day 1 AM | 2-3 jam | **Phase 0:** API discovery via DevTools, dokumentasi endpoint |
+| ~~Day 1 AM~~ | ~~2-3 jam~~ | ~~Phase 0~~ — ✅ **DONE** via Postman doc ingestion |
 | Day 1 AM | 1 jam | Setup repo, Vercel project, deps, TypeScript config |
-| Day 1 PM | 1 jam | MCP transport skeleton + handshake test |
-| Day 1 PM | 2 jam | Phase 1: Read-only tools (8-9 tools) |
+| Day 1 AM | 1 jam | MCP transport skeleton + handshake test |
+| Day 1 PM | 2-3 jam | Phase 1: Read-only tools (~11 tools incl. Settings lookups) |
 | Day 1 PM | 1 jam | Local testing dengan Claude Code |
-| Day 2 AM | 3 jam | Phase 2: Full CRUD (incl. steps + folders) |
+| Day 2 AM | 3-4 jam | Phase 2: Full CRUD (TC, folders, optionally step groups) |
 | Day 2 AM | 30 min | Deploy ke Vercel production |
 | Day 2 PM | 1 jam | Phase 3: Test combo dengan Atlassian MCP |
 | Day 2 PM | 1.5 jam | README, onboarding doc, error polishing |
-| **Total** | **~13 jam** | **MVP shipped** |
+| **Total** | **~10-11 jam** | **MVP shipped** |
 
-### Follow-up (Phase 4-5) — Target: 1 minggu setelah MVP
+### Follow-up (Phase 4) — Target: 2-3 hari setelah MVP
 
 | Week | Activity |
 |------|----------|
-| Week 2, Day 1 | Phase 4: Schema reverse-engineering session |
-| Week 2, Day 2-3 | Phase 5: Step CRUD implementation |
-| Week 2, Day 4 | Integration testing + documentation update |
-| Week 2, Day 5 | Soft launch ke 1-2 QA colleagues (Ashish, Sebastian) untuk feedback |
+| Week 2, Day 1-2 | Phase 4: Plans + Runs + result marking (multipart) |
+| Week 2, Day 3 | Integration testing + documentation update |
+| Week 2, Day 4 | Soft launch ke 1-2 QA colleagues untuk feedback |
 
 ---
 

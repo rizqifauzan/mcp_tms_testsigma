@@ -17,11 +17,11 @@ Custom MCP server untuk integrasi **Testsigma Test Management** (`test-managemen
 ## Status
 
 - [x] Plan v1.0 + reference consolidated
-- [~] Phase 0 — API discovery (mostly done): read endpoints captured + documented in REFERENCE §5. Remaining: writes (POST/PUT/DELETE), lookup tables, requirements/Jira link, test_suites — all need DevTools capture. See [`PHASE_0_DISCOVERY.md`](./docs/PHASE_0_DISCOVERY.md).
+- [x] **Phase 0 — API discovery** ✅ done via official Testsigma Postman collection. Full endpoint catalog in [`docs/REFERENCE.md` §5](./docs/REFERENCE.md#5-endpoints-reference). Phase 5 (Jira link) dropped — not in API.
 - [ ] Phase 1 — Read-only tools
-- [ ] Phase 2 — Full CRUD
-- [ ] Phase 3 — Jira combo
-- [ ] Phase 4 — Test plans & runs
-- [ ] Phase 5 — Requirements traceability
+- [ ] Phase 2 — Full CRUD (TC + folders; step groups stretch)
+- [ ] Phase 3 — Jira combo (orchestration only)
+- [ ] Phase 4 — Test plans & runs (with multipart result marking + JUnit import)
+- ~~Phase 5 — Requirements traceability~~ — **dropped** (not in API)
 
 See [`PROJECT_PLAN.md` §4 Timeline](./PROJECT_PLAN.md) for detail.

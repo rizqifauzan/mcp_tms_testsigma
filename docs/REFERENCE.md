@@ -3,7 +3,7 @@
 > Single source of truth untuk semua fakta yang dipakai di `PROJECT_PLAN.md` dan implementasi. Update file ini saat ada penemuan baru (terutama dari Phase 0 API discovery). Plan dan code wajib konsisten dengan file ini.
 
 **Last verified:** 2026-05-19
-**Status:** Phase 0 — **read endpoints captured via authenticated probe.** Writes (POST/PUT/DELETE), lookup tables, requirements/Jira link still need DevTools capture. See [`PHASE_0_DISCOVERY.md`](./PHASE_0_DISCOVERY.md).
+**Status:** Phase 0 ✅ **DONE.** Official Postman collection ingested; all major resource endpoints + body shapes documented (§5). Outstanding minor items tracked in §8 — none block Phase 1 coding.
 
 ---
 
@@ -75,12 +75,35 @@ API response shape from `GET /projects/{id}/test_cases/{tc_id}`:
 
 Notable observations:
 - `title`, not `name`
-- `steps`, `expected_results`, `preconditions`, `description` are all **plain strings** (likely newline-delimited; rich-text format TBD)
-- `template_type: "TCD"` — other templates may exist (BDD?); not yet observed
-- Status / priority / type / automation_type are UUID refs to lookup tables — **the lookup endpoint has not been found via probing** (returned 404 for `/property_definitions`, `/properties`, `/options`, etc.). Must capture via DevTools.
-- `labels` is an embedded array of objects (`createdAt`/`updatedAt` camelCase — inconsistent with surrounding snake_case fields)
+- **Two template types exist:**
+  - `"TCD"` — `steps` and `expected_results` are plain newline-delimited strings (single text blob each). No structured step objects. This is what `GR-7` uses in our account.
+  - `"STEPS"` — uses an additional field `individual_steps[]: [{step_description, expected_results, order, step_type, step_group_id}]`. Granular step CRUD becomes possible. `step_type` observed value: `"DEFAULT"` (other values TBD — possibly API call, data-driven, etc.).
+- Status / priority / type / automation_type are UUID refs to lookup tables. **Lookup endpoints are at ROOT, not under `/projects/{id}/`:**
+  - `GET /api/v1/test_cases/statuses`
+  - `GET /api/v1/test_cases/priorities`
+  - `GET /api/v1/test_cases/types`
+  - `GET /api/v1/test_cases/automation_types`
+  - `GET /api/v1/test_runs/statuses`
+- `labels` embedded array uses camelCase (`createdAt`/`updatedAt`) — inconsistent with surrounding snake_case
 - `human_id` follows pattern `{project.human_id_prefix}-{N}` (e.g. `GR-7`)
-- **`requirements` / Jira issue keys field NOT present in response** — must be capturing from a different endpoint or not exposed via API; defer until DevTools captures it
+- **Test case URLs accept either UUID or human_id** (`/test_cases/DEMO-2` works) — flexible routing
+- **`requirements` / Jira issue keys field NOT in API response** — confirmed dropped from MVP scope (see [PROJECT_PLAN §3](../PROJECT_PLAN.md))
+
+### Step Groups (new entity — not in original plan)
+Reusable bundles of structured steps. Separate first-class resource at `/projects/{pid}/step_groups`.
+
+```json
+{
+  "title": "<string>",
+  "description": "<string>",
+  "label_ids": ["<uuid_or_name>"],
+  "steps": [
+    { "step_description": "<string>", "expected_result": "<string>", "order": <int> }
+  ]
+}
+```
+
+Step groups can be embedded into a test case's `individual_steps` via `step_type: "STEP_GROUP"` (presumed) and `step_group_id: "<uuid>"`. Provides a DRY pattern for repeated step sequences (e.g. "Login" preface).
 
 ### Folders
 - Hierarchical tree structure (folders + subfolders, unlimited nesting)
@@ -88,46 +111,42 @@ Notable observations:
 - Folder = organizational unit; doesn't have execution semantics
 
 ### Test Suites
-- Flat collection of test cases (a TC can belong to multiple suites)
-- Used for grouping by feature/scenario for execution
-- Has its own Pre-Requisite field
-- ⚠️ **Phase 0 finding:** No REST endpoint exposing test_suites was discovered (see §5 Test Suites). Either this is UI-only, named differently, or not in this account's plan. Confirm before relying on suites in MCP design.
+- ⚠️ **CONFIRMED NOT IN API.** Official Postman collection has zero `test_suites` endpoints. The concept of a "static list of TCs grouped for execution" is replaced by **`static_selection_filters`** on a test run (see Test Runs below).
+- If TMS UI shows a "Test Suites" menu, it's a UI-side abstraction — not exposed for MCP integration. **Dropped from MCP scope.**
 
 ### Test Plans
-- High-level execution strategy (scope, objectives, environment)
-- Contains one or more Test Suites
-- Supports scheduling
-- Generates Test Runs when executed
+- Container for runs over a time window. Body: `{title, description, start_date, end_date, label_ids[]}` — no direct `suites[]` or `test_cases[]` link.
+- Has a **`complete`** action: `POST /test_plans/{id}/complete`.
+- Lists its runs via `GET /test_plans/{id}/test_runs`.
+- Relationship to runs: a run can carry a `test_plan_id` to associate itself with a plan.
 
 ### Test Runs (Executions)
-- Instance of a plan execution at a point in time
-- Per-TC result: Pass / Fail / Blocked / Skip + comment + attachments
-- Results sync back to linked Jira issues (two-way)
+- Instance of execution. Carries selection logic directly (no suite layer).
+- **`selection_type`:**
+  - `"STATIC"` — explicit list via `static_selection_filters: [{field, operator, values[]}]` (e.g. `{field:"id", operator:"IN", values:[<uuid>,...]}`)
+  - `"DYNAMIC"` — filters evaluated at run time (shape: `dynamic_selection_filters[]` + `dynamic_selection_excluded_test_case_ids`)
+- Per-TC result: `test_run_status_id` (UUID, resolved via `/test_runs/statuses`) + optional description + attachments
+- Mark result endpoint uses **multipart/form-data** with JSON in field `data` and files as `attachments_<run_case_index>_<n>` (see §5 Test Runs)
+- Assign user to a TC inside a run: `PUT /test_runs/{rid}/assign_user` with `{user_id, test_case_id}`
+- JUnit XML import to populate run results: `POST /projects/{pid}/junit-import/test-run/{rid}` (multipart, async — poll `/junit-imports/{import_id}/status`)
+- Results sync back to linked Jira issues (two-way) — documented in product docs but **no MCP-facing API**
 
 ---
 
 ## 3. Authentication
 
-### Confirmed via Phase 0 (2026-05-19)
-- **Method:** `Authorization: Bearer <TOKEN>` — token is a **JWT** (HS256), not a static API key
-- **JWT payload observed:** `{"iss":"TMS","sub":"<user_uuid>","nbf":<epoch>,"iat":<epoch>,"id_session_re_validate":0}` — **no `exp` claim** (or exp lives outside JWT, enforced server-side via session)
-- **Source of token:** Captured from a logged-in browser session (DevTools / cookies). It is the same JWT the SPA uses to call its own backend.
-- **Rate limit headers visible:**
-  - `x-tms-api-limit: 10`
-  - `x-tms-api-remaining: <decreasing>`
-  - `x-tms-api-reset: <negative_number>` (semantics unclear; observed `-1779181353` ~= negated current epoch; treat as "no published reset window")
+### Confirmed
+- **Method:** `Authorization: Bearer <TOKEN>` for every request
+- **Two token types both work:**
+  1. **API Key** (preferred for MCP) — generated via TMS UI **Settings → API Keys** panel. Long-lived. User-confirmed this panel exists (2026-05-19). To verify probe behavior, see [`PHASE_0_DISCOVERY.md`](./PHASE_0_DISCOVERY.md).
+  2. **JWT session token** — short-lived, pulled from a logged-in browser session. Format observed: `iss=TMS`, `sub=<user_uuid>`, `iat=<epoch>`, no explicit `exp` claim in payload. Useful for local dev / one-off probing.
+- **MCP distribution strategy:** each QA team member generates their own API key from TMS Settings, configures it in their Claude Code via `X-Testsigma-Key` header. Server forwards as `Authorization: Bearer <key>` to TMS. Audit trail per user preserved.
+- **Rate limit headers visible:** `x-tms-api-limit: 10`, `x-tms-api-remaining: <decreasing>`, `x-tms-api-reset: <negative_number>` (semantics unclear; window unit not documented — must observe empirically)
 
-### ⚠️ Still unknown — escalate before Phase 1 coding
-- **Open Question #1 (Critical):** Is there a long-lived API key option (TMS Settings → API Keys panel)? Or is the JWT session token the ONLY auth mechanism for `test-management.testsigma.com`? If only JWTs are available, the MCP stateless model has a problem: tokens expire, and users would need to re-paste them. **User must check the TMS UI Settings menu.**
-- Whether TMS API keys (if they exist) are shared with `app.testsigma.com` automation platform.
-- Rate limit window: 10 requests per **what** (second/minute/hour)? Not documented in headers.
-
-### Fallback / blocker risk
-- ⚠️ **Confirmed partial blocker:** A JWT pulled from a browser session works, but is short-lived and tied to a logged-in user. For a multi-user MCP distributed to QA team, every user would need to repeatedly paste fresh JWTs unless TMS exposes API keys.
-- Mitigations if blocker confirmed:
-  - Ask Testsigma support about PAT availability for TMS
-  - Document "paste browser JWT" workflow as MVP, with caveats
-  - Long-term: pivot to a session-refresh proxy (significantly more complex)
+### Still unclear
+- Whether the same API key works against `app.testsigma.com` automation platform (separate question; not needed for TMS MCP)
+- Rate limit window: 10 requests per **what** (second/minute/hour)? Empirically determine during Phase 1 testing.
+- Whether API keys are scoped (per-project, per-action) or full-access. Postman doc doesn't mention scopes — assume full.
 
 ---
 
@@ -149,7 +168,9 @@ Notable observations:
 | **Internal record ID** | Backend uses ULIDs in `tsid` columns (visible only in pagination cursors). Public API exposes UUIDs as primary `id`. |
 | **Timestamps** | All `created_at`/`updated_at` are epoch milliseconds as integers |
 | **Naming inconsistency** | Embedded `labels[]` use camelCase (`createdAt`, `updatedAt`) while everything else is snake_case |
-| **Filter params (test_cases)** | `?folder_id=<uuid>` works, `?search=<term>` works. `?q=` and `?filter=` are silently ignored. |
+| **Filter params** | Django-ORM-like suffix syntax: `?name__NEQ=Demo`, presumably `__EQ`, `__LIKE`, `__IN`, etc. (full operator list not documented). On test_cases also: `?folder_id=<uuid>`, `?search=<term>`. |
+| **Pagination params** | `?page_size=<n>` confirmed in Postman doc. Cursor via `page_info.next` |
+| **Multipart endpoints** | Two confirmed: (1) Update run TC result — JSON payload in `data` field + files as `attachments_<i>_<j>`. (2) JUnit import — file as `junit_xml`. |
 | **Error envelope (404)** | `{"code":404,"message":"Not Found"}` — 35 bytes flat |
 | **Error envelope (validation)** | `{"message":"<msg>","errors":{"code":400,"message":"<msg>","details":"<detail>"}}` |
 | **Error envelope (not-found-with-id)** | `{"message":"<entity> not found","errors":{"code":404,"message":"...","details":"<entity> not found with ID: <uuid>"}}` |
@@ -159,142 +180,170 @@ Notable observations:
 | **Swagger / OpenAPI** | NOT exposed (`/swagger.json`, `/openapi.json`, `/api-docs` all 404 even with valid JWT). |
 | **GraphQL** | `POST /graphql` returns 404 (the unauthenticated 401 was misleading — auth gate fires before route resolution). REST is the only API. |
 
-### Discovery plan (Phase 0)
-1. Login ke `test-management.testsigma.com`, buka Chrome DevTools → Network → filter `Fetch/XHR`
-2. Capture request untuk setiap action:
-   - Load dashboard (list projects)
-   - Open project (list folders)
-   - Open folder (list test cases)
-   - Open test case (get detail + steps)
-   - Create test case
-   - Update test case
-   - Delete test case
-   - Create test suite
-   - Create test plan
-   - Start test run
-   - Mark TC result
-   - Link to Jira issue
-3. Dokumentasi tiap endpoint ke section [§5 Endpoints Reference](#5-endpoints-reference) di file ini
-4. Catat:
-   - HTTP method + path
-   - Required headers (auth, content-type, custom)
-   - Path params + query params
-   - Request body schema
-   - Response shape
-   - Pagination style (offset/cursor/page)
-   - Status codes yang mungkin
+### Source of truth for endpoints
+Official Testsigma Postman collection (2025-06-24 publish): https://documenter.getpostman.com/view/40565679/2sB2xChp9y
 
-### Hipotesis (status update)
-- ✅ Base URL `/api/v1/` — **confirmed**
-- ⏳ Resource path style snake vs camel — **inconclusive without API key** (auth gate fires before routing)
-- ⏳ ID-based vs slug-based — TBD
-- ⏳ Pagination shape — TBD
-- ⏳ Whether TMS exposes a Swagger doc once authenticated — **highly probable** (`/api/v1/swagger.json` returns 401, not 404)
+A sanitized JSON snapshot is cached at `tmp/pm.json` during Phase 0 — not committed (gitignored). Re-fetch with:
+```bash
+curl -sS "https://documenter.getpostman.com/api/collections/40565679/2sB2xChp9y" > /tmp/pm.json
+```
+
+The Postman doc covers 44 endpoints across 7 groups: Project, Folder, Test Case, Step Group, Test Run, Test Plan, Settings. **Conspicuously absent**: requirements/Jira-link, custom fields, attachments-per-TC. These are not exposed in the official public API.
 
 ---
 
 ## 5. Endpoints Reference
 
-> Read endpoints confirmed via Phase 0 (2026-05-19). Write endpoints (POST/PUT/DELETE) NOT YET PROBED — defer to DevTools capture during a real create/update action.
+All endpoints are under base `https://test-management.testsigma.com/api/v1`. Auth: `Authorization: Bearer <key>`. Status: [x] = documented in Postman doc + observed body shape captured, [~] = documented but body not yet observed (empty in our account).
 
 ### Projects
-- [x] `GET /projects` — list. Response: `data.projects[]`. Per-item: `{ id, name, description, human_id_prefix, created_at, updated_at }`
-- [x] `GET /projects/{id}` — detail. Response: `data.project`.
-- [ ] `POST /projects` — TBD (DevTools)
-- [ ] `PUT /projects/{id}` — TBD
-- [ ] `DELETE /projects/{id}` — TBD
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects` | List. Supports filter operators: `?name__NEQ=Demo project`, `?page_size=N`. Response: `data.projects[]` |
+| GET | `/projects/{id}` | Detail. Response: `data.project` |
+| POST | `/projects` | Create. Body: `{name, description, human_id_prefix}` |
+| PUT | `/projects/{id}` | Update. Body: `{name?, description?}` |
+| DELETE | `/projects/{id}` | Delete |
 
 ### Folders
-- [x] `GET /projects/{project_id}/folders` — list. Response: `data.folders[]`. Per-item: `{ id, name, project_id, parent_folder_id, order, children: [] }`. `children` always empty in collection response — must traverse via `parent_folder_id` recursion or fetch detail.
-- [x] `GET /projects/{project_id}/folders/{folder_id}` — detail. Response: `data.folder`.
-- ⚠️ `/projects/{id}/folders/{folder_id}/test_cases` → 404. Use `?folder_id=` filter on `/test_cases` instead.
-- ⚠️ No `/folders/tree` endpoint. Build the tree client-side from the flat list.
-- [ ] `POST /projects/{project_id}/folders` — TBD (DevTools)
-- [ ] `PUT/DELETE` — TBD
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects/{pid}/folders` | List. `?page_size=N`. Response: `data.folders[]`. `children` is always `[]` in list response — build tree from `parent_folder_id`. |
+| GET | `/projects/{pid}/folders/{fid}` | Detail. Response: `data.folder` |
+| POST | `/projects/{pid}/folders` | Create. Body: `{name, order}`. Parent assignment via separate `/move` call (or `parent_folder_id` in body — TBD; Postman example doesn't show parent at create time). |
+| PUT | `/projects/{pid}/folders/{fid}` | Update. Body: `{name?, order?}` |
+| POST | `/projects/{pid}/folders/{fid}/move` | Reparent. Body: `{parent_folder_id}` |
+| DELETE | `/projects/{pid}/folders/{fid}` | Delete |
 
 ### Test Cases
-- [x] `GET /projects/{project_id}/test_cases` — list with filters
-  - Query: `?folder_id=<uuid>`, `?search=<term>` — both confirmed working
-  - Pagination: cursor via `page_info.next` (base64 string) — verify on next iteration
-  - Response: `data.test_cases[]`
-- [x] `GET /projects/{project_id}/test_cases/{tc_id}` — detail. Response: `data.test_case` — see §2 "Test Case Fields" for full shape.
-- ⚠️ No separate `/steps`, `/attachments`, `/requirements`, `/comments`, `/history` sub-resources on test cases (all return 404). Steps are part of the `steps` string field.
-- [ ] `POST /projects/{project_id}/test_cases` — TBD (DevTools)
-- [ ] `PUT /projects/{project_id}/test_cases/{tc_id}` — TBD
-- [ ] `DELETE /projects/{project_id}/test_cases/{tc_id}` — TBD
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects/{pid}/test_cases` | List. Filters: `?folder_id=<uuid>`, `?search=<term>`. Cursor pagination via `page_info.next`. Response: `data.test_cases[]` |
+| GET | `/projects/{pid}/test_cases/{tc_id_or_human_id}` | Detail. Response: `data.test_case`. URL accepts UUID OR `human_id` like `DEMO-2`. |
+| POST | `/projects/{pid}/test_cases` | Create. See body schema below. |
+| PUT | `/projects/{pid}/test_cases/{tc_id_or_human_id}` | Update. Same body. To switch template, change `template_type` and add/remove `individual_steps`. |
+| DELETE | `/projects/{pid}/test_cases/{tc_id_or_human_id}` | Delete |
 
-### Test Suites
-- ❌ **No `/test_suites` endpoint discovered.** Tried: `/test_suites`, `/projects/{id}/test_suites`, `/projects/{id}/test_case_suites`, `/projects/{id}/suites`. All 404.
-- Hypothesis: Test Suites may be a UI-only abstraction over filtered TC lists, OR they live under a different name (e.g. "dynamic_selection_filters" on a test run — see Test Runs entity below), OR this org's plan tier doesn't include them.
-- **Action:** Confirm in TMS UI whether Test Suites exist for this account. Capture via DevTools if so.
+**Create/Update body schema:**
+```jsonc
+{
+  "title": "<string>",
+  "description": "<string>",
+  "template_type": "TCD" | "STEPS",     // TCD = string blob, STEPS = individual_steps array
+  "preconditions": "<string>",
+  "steps": "<string>",                  // newline-delimited if TCD
+  "expected_results": "<string>",       // newline-delimited if TCD
+  "type_id": "<uuid>",                  // from /test_cases/types
+  "status_id": "<uuid>",                // from /test_cases/statuses
+  "automation_type_id": "<uuid>",       // from /test_cases/automation_types
+  "priority_id": "<uuid>",              // from /test_cases/priorities
+  "project_id": "<uuid>",
+  "owner_id": "<uuid>",                 // from /users
+  "reviewer_id": "<uuid>",
+  "folder_id": "<uuid>",
+  "label_ids": ["<uuid_or_name>"],      // ambiguous — Postman example uses string name, not UUID
+  "individual_steps": [                 // only when template_type === "STEPS"
+    {
+      "step_description": "<string>",
+      "expected_results": "<string>",
+      "order": <float>,
+      "step_type": "DEFAULT",           // possibly STEP_GROUP, others TBD
+      "step_group_id": null             // UUID when reusing a step_group
+    }
+  ]
+}
+```
+
+### Step Groups (reusable step bundles)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects/{pid}/step_groups` | List. `?page_size=N`. |
+| GET | `/projects/{pid}/step_groups/{sg_id_or_human_id}` | Detail. Human ID format: `DEMO-SG-1`. |
+| POST | `/projects/{pid}/step_groups` | Create. Body: `{title, description, label_ids[], steps: [{step_description, expected_result, order}]}`. NOTE: field is `expected_result` (singular) here, but `expected_results` (plural) in test_case `individual_steps` — schema inconsistency. |
+| PUT | `/projects/{pid}/step_groups/{sg_id_or_human_id}` | Update. Same body. |
+| DELETE | `/projects/{pid}/step_groups/{sg_id_or_human_id}` | Delete |
 
 ### Test Plans
-- [x] `GET /projects/{project_id}/test_plans` — list. Response: `data.test_plans[]` (empty on this account — schema unknown).
-- [ ] `GET /projects/{project_id}/test_plans/{plan_id}` — TBD
-- [ ] `POST /projects/{project_id}/test_plans` — TBD
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects/{pid}/test_plans` | List |
+| GET | `/projects/{pid}/test_plans/{plan_id_or_human_id}` | Detail. Human ID: `DEMO-P-1` |
+| POST | `/projects/{pid}/test_plans` | Create. Body: `{title, description, start_date, end_date, label_ids[]}` (dates are epoch seconds based on example — 1710374400 = 2024-03-14) |
+| PUT | `/projects/{pid}/test_plans/{plan_id_or_human_id}` | Update |
+| DELETE | `/projects/{pid}/test_plans/{plan_id_or_human_id}` | Delete |
+| POST | `/projects/{pid}/test_plans/{plan_id}/complete` | Mark plan completed (no body) |
+| GET | `/projects/{pid}/test_plans/{plan_id}/test_runs` | List runs belonging to this plan |
 
 ### Test Runs
-- [x] `GET /projects/{project_id}/test_runs` — list. Response: `data.test_runs[]`. Per-item shape:
-  ```json
-  {
-    "id": "<uuid>", "title": "<string>", "description": "<string>",
-    "human_id": "GR-R-1",
-    "status": "ACTIVE",
-    "selection_type": "DYNAMIC",
-    "dynamic_selection_filters": [],
-    "dynamic_selection_excluded_test_case_ids": null,
-    "start_date": <epoch_ms>, "end_date": <epoch_ms>,
-    "assignee_id": "<uuid>", "project_id": "<uuid>",
-    "labels": [], "environments": null,
-    "test_plan_id": "",
-    "test_cases_count": <int>,
-    "test_run_status_summary": null,
-    "created_at": <epoch_ms>, "updated_at": <epoch_ms>
-  }
-  ```
-- [x] `GET /projects/{project_id}/test_runs/{run_id}` — detail. Same shape as collection item.
-- [x] `GET /projects/{project_id}/test_runs/{run_id}/test_cases` — per-TC results. Response: `data.test_run_cases[]`. Shape:
-  ```json
-  {
-    "id": "<run_tc_uuid>",
-    "assignee_id": "<uuid_or_empty>",
-    "status_id": "<uuid>",
-    "assignee": null,
-    "status": "Passed",          // ← resolved name; possible values to be enumerated
-    "test_case": { ...embedded TC subset... }  // no preconditions field in embedded copy
-  }
-  ```
-- ⚠️ `/test_runs/{id}/results` and `/test_runs/{id}/summary` → 404. Status summary appears in run detail as `test_run_status_summary` (null on inactive runs — must capture an active run to see shape).
-- [ ] `POST /projects/{project_id}/test_runs` — TBD
-- [ ] `PUT /test_runs/{run_id}/test_cases/{run_tc_id}` (or similar) for marking Pass/Fail — TBD
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/projects/{pid}/test_runs` | List. Response: `data.test_runs[]` |
+| GET | `/projects/{pid}/test_runs/{run_id_or_human_id}` | Detail. Human ID: `DEMO-R-1` |
+| POST | `/projects/{pid}/test_runs` | Create. See body below. |
+| PUT | `/projects/{pid}/test_runs/{run_id_or_human_id}` | Update |
+| DELETE | `/projects/{pid}/test_runs/{run_id_or_human_id}` | Delete |
+| GET | `/projects/{pid}/test_runs/{run_id_or_human_id}/test_cases` | List per-TC results. Response: `data.test_run_cases[]` |
+| **PUT** | `/projects/{pid}/test_runs/{run_id_or_human_id}/test_cases` | **Update result(s) — multipart/form-data.** See body below. |
+| PUT | `/projects/{pid}/test_runs/{run_id_or_human_id}/assign_user` | Assign user. Body: `{user_id, test_case_id}` |
+| POST | `/projects/{pid}/junit-import/test-run/{run_id_or_human_id}` | JUnit import. multipart with `junit_xml` file. Async. |
+| GET | `/projects/{pid}/junit-imports/{import_id}/status` | Poll import status |
 
-### Labels (global)
-- [x] `GET /labels` — list. Response: `data.labels[]`. Per-item: `{ id, name, createdAt, updatedAt }` (camelCase!)
-- [ ] CRUD — TBD
+**Create test run body:**
+```jsonc
+{
+  "title": "<string>",
+  "description": "<string>",
+  "status": "ACTIVE",
+  "project_id": "<uuid>",
+  "human_id": "<optional>",
+  "selection_type": "STATIC" | "DYNAMIC",
+  "static_selection_filters": [           // for STATIC
+    { "field": "id", "operator": "IN", "values": ["<tc_uuid>"] }
+  ],
+  "dynamic_selection_filters": [],        // for DYNAMIC
+  "start_date": <epoch_seconds>,
+  "end_date": <epoch_seconds>,
+  "assignee_id": "<uuid>",
+  "label_names": ["Smoke", "Regression"],  // note: label_names here, label_ids elsewhere
+  "environment_ids": []
+}
+```
 
-### Users (global)
-- [x] `GET /users` — list. Response envelope: `data` is the array directly (no wrapper key). Per-item: `{ id, email, first_name, last_name, identity_user_uuid, status, created_at, updated_at }`
-- ⚠️ `/me`, `/users/me`, `/auth/whoami`, `/identity/me` all 404. Current user must be identified via JWT `sub` claim → cross-reference against `/users[].identity_user_uuid` (NOT `id`).
+**Update run TC result body (multipart/form-data):**
+- Form field `data` (text): `{"test_run_cases": [{"test_case_id":"<uuid>","test_run_status_id":"<uuid>","user_id":"<uuid>","description":"<string>"}]}`
+- Form fields `attachments_<run_case_index>_<attachment_index>` (file): optional file attachments
 
-### Lookup tables (status / priority / type / automation_type)
-- ❌ **No discoverable lookup endpoint** for resolving the `status_id` / `priority_id` / `type_id` / `automation_type_id` UUIDs on a test case to human-readable names. Tried: `/properties`, `/property_definitions`, `/options`, `/test_case_options`, `/lookups`, `/dropdowns`, and project-nested variants. All 404.
-- **Indirect resolution:** The `/test_runs/{run_id}/test_cases` response includes a resolved `status` name alongside `status_id` for run results, but only for run-result statuses, not for TC lifecycle statuses (Draft/Active/etc).
-- **Action:** Highest-priority DevTools capture — open "Manage Properties" in TMS UI Settings and capture the API call. Without this, the MCP can't show meaningful values.
+### Settings / Lookup tables (root-level, no project scope)
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/test_cases/statuses` | TC lifecycle status options (Draft/Active/etc) |
+| GET | `/test_cases/priorities` | Priority options (High/Medium/Low/etc) |
+| GET | `/test_cases/types` | TC type options (Functional/Regression/etc) |
+| GET | `/test_cases/automation_types` | Automation status options |
+| GET | `/test_runs/statuses` | Run-result status options (Passed/Failed/Blocked/Skipped) |
+| GET | `/users` | All users in the org. Per-item: `{id, email, first_name, last_name, identity_user_uuid, status, ...}` |
 
-### Requirements / Jira link
-- ❌ Not present in TC detail response. Tried: `/test_cases/{id}/jira_issues`, `/linked_issues`, `/integrations`. All 404.
-- **Action:** Capture during a "Link Jira issue to TC" UI action.
+**Note:** No CRUD endpoints in the public API for these lookup tables — they're managed via UI Settings → Manage Properties. MCP can only read, not customize.
+
+### Labels (global, not in Postman doc but confirmed via probe)
+- `GET /labels` — list. Response: `data.labels[]`. Per-item: `{id, name, createdAt, updatedAt}` (camelCase fields, inconsistent with elsewhere). Confirmed via direct probe; absent from Postman doc.
+
+### Conspicuously absent (not exposed in API)
+- ❌ **Requirements / Jira link** — Postman doc has zero endpoints. **Dropped from MCP MVP.**
+- ❌ **Custom Fields** — referenced in §2 but no CRUD endpoint
+- ❌ **Test Suites** — confirmed not a first-class resource (use run `selection_type` instead)
+- ❌ **TC Attachments** — only attachable inside run results, not on the TC itself
+- ❌ **Comments / History** — no endpoints
+- ❌ **Current user / whoami** — workaround: decode JWT `sub` and cross-reference `/users[].identity_user_uuid`
 
 ---
 
 ## 6. Native Integrations (Relevant ke MCP)
 
-### Jira (two-way) — confirmed
-- Native field "Requirements" di test case → store Jira issue keys
-- Two-way sync: status, comments, results
-- Test runs auto-create Jira issues for failures (with screenshots)
-- Marketplace app: "Test Management by Testsigma" di Atlassian Marketplace
-- **Relevance ke MCP:** combo dengan Atlassian MCP jadi powerful — coverage report, bulk scaffolding TC dari Jira
+### Jira (two-way) — partial
+- Native UI feature: "Requirements" field on test case stores Jira issue keys, two-way sync, failure auto-creates Jira issues.
+- **However: NOT exposed in the public REST API.** Postman collection has zero Jira-link endpoints. Confirmed dropped from MCP MVP scope.
+- **MCP value remaining:** orchestration only. Atlassian MCP fetches Jira issue → user manually pastes Jira key into TMS UI Requirements field. Or scaffold a TC from Jira issue content without the formal link.
 
 ### Other integrations (documented, not in MCP scope)
 - Azure DevOps (two-way test management)
@@ -325,11 +374,19 @@ Notable observations:
 
 | # | Question | Status | Impact | How to resolve |
 |---|---|---|---|---|
-| 1 | API key TMS = automation key, atau terpisah? Apakah ada API key sama sekali, atau cuma JWT session? | **Partially open** — JWT confirmed working; long-lived key not yet found | Critical | User must check TMS UI Settings menu for an "API Keys" panel |
+| 1 | API key TMS = automation key, atau terpisah? Apakah ada API key panel? | ✅ **Closed** — TMS Settings has API Keys panel (user-confirmed). Both API key + JWT session token work with `Authorization: Bearer`. | Critical | — |
 | 2 | API base URL exact path? | ✅ **Closed** — `/api/v1/` on `test-management.testsigma.com` | Critical | — |
-| 3 | API key scope penuh atau limited? | ✅ **Closed (partially)** — JWT covers all read endpoints tested (projects, folders, test_cases, test_runs, test_plans, labels, users). Writes not yet tested. | High | Write probe deferred until safe to mutate |
-| 4 | Pagination style? | ✅ **Closed** — cursor-based, base64-encoded JSON, `page_info: {page_size, total_count, next, prev}` | Medium | — |
-| 5 | Rate limits? | **Partially open** — `x-tms-api-limit: 10` header observed, unit unknown | Medium | Capture during a high-volume DevTools session, or ask Testsigma support |
+| 3 | Endpoints + body shapes for all resources? | ✅ **Closed** — Official Postman collection covers full CRUD for Project, Folder, Test Case, Step Group, Test Run, Test Plan; plus 5 Settings lookup endpoints | High | — |
+| 4 | Pagination style? | ✅ **Closed** — cursor-based, base64-encoded JSON. Param: `?page_size=N`. Returns `page_info: {page_size, total_count, next, prev}` | Medium | — |
+| 5 | Rate limits? | **Partially open** — `x-tms-api-limit: 10` header observed, window unit unknown | Medium | Empirically measure during Phase 1 — burst test 11 requests in 1s vs 1m |
+| 6 | Steps schema? | ✅ **Closed** — two template types. `TCD` = single string. `STEPS` = `individual_steps[]` structured. | High | — |
+| 7 | Lookup tables for status/priority/type? | ✅ **Closed** — root-level endpoints under `/test_cases/{statuses,priorities,types,automation_types}` and `/test_runs/statuses` | High | — |
+| 8 | Test Suites? | ✅ **Closed** — not a first-class API resource. Use test run `selection_type` instead. | Medium | — |
+| 9 | Jira link API? | ✅ **Closed (negative)** — not exposed. Dropped from MVP. | Medium | — |
+| 10 | `label_ids` vs `label_names` inconsistency? | Open | Low | First write test will reveal — Postman example for create_test_case uses string name (`"Flight_testcase"`) inside `label_ids`. Could be auto-create-by-name. |
+| 11 | `step_type` enum complete values? | Open | Low | Capture during a UI action that adds a step group reference inside a TC |
+| 12 | JWT vs API key lifetime difference? | Open | Medium | Generate API key in TMS UI, observe behavior over days |
+| 13 | Rate limit reset header semantics (negative number)? | Open | Low | Acknowledge as undocumented; ignore in client |
 | 6 | Step attachment upload flow? | Low (skip MVP) | Defer; tool tanpa attachment dulu |
 | 7 | Custom field schema discovery? | Medium | Inspect per-project response payload |
 | 8 | Project ID vs slug di URL? | Low | DevTools inspection |
@@ -371,3 +428,4 @@ Notable observations:
 |---|---|---|
 | 2026-05-19 | Initial consolidation from web research + PROJECT_PLAN v1.0 | Claude (with Rizqi clarification on TMS vs automation) |
 | 2026-05-19 | Phase 0 authenticated probe: closed Q2/Q3/Q4. Captured shapes for projects, folders, test_cases (detail + list), test_plans, test_runs, run/test_cases, labels, users. Surfaced major schema discovery — `steps`/`expected_results` are newline-delimited strings, not arrays of `{action, expected}`. No swagger, no GraphQL, no test_suites endpoint, no lookup tables endpoint, no requirements field on TC discovered. | Claude (using JWT session token shared by Rizqi) |
+| 2026-05-19 | Phase 0 ✅ complete. Ingested official Testsigma Postman collection (https://documenter.getpostman.com/view/40565679/2sB2xChp9y). Closed Q1 (API keys panel exists), Q3, Q6, Q7, Q8 (suites not in API), Q9 (Jira not in API). Discovered Step Groups as new entity, TCD vs STEPS template duality, root-level lookup endpoints, multipart pattern for run result + JUnit import, folder `/move` action, plan `/complete` action, `__operator` filter syntax. Requirements/Jira API dropped from MVP per user decision. | Claude (using Postman doc shared by Rizqi) |

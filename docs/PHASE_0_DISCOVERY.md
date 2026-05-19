@@ -1,8 +1,10 @@
 # Phase 0 — TMS API Discovery Playbook
 
-> Step-by-step guide untuk menyelesaikan Phase 0. Hasil capture → isi balik ke [`REFERENCE.md`](./REFERENCE.md) §5.
+> ✅ **Phase 0 COMPLETED 2026-05-19.** Discovery resolved by ingesting the official Testsigma Postman collection: https://documenter.getpostman.com/view/40565679/2sB2xChp9y — see [`REFERENCE.md` §5](./REFERENCE.md#5-endpoints-reference) for the full endpoint catalog.
+>
+> This playbook is retained for posterity (DevTools fallback if the Postman doc disappears) and for capturing the few remaining edge-case items in [`REFERENCE.md` §8](./REFERENCE.md#8-known-limitations--open-questions) #10-13 (label_ids semantics, step_type enum, rate limit window, JWT vs API key lifetime).
 
-**Prerequisite:** Akun aktif di `test-management.testsigma.com` dengan role yang bisa generate API key (Admin atau Super Admin). Tanpa ini Phase 0 tidak bisa dieksekusi.
+**Prerequisite:** Akun aktif di `test-management.testsigma.com` dengan role yang bisa generate API key (Admin atau Super Admin).
 
 ---
 
