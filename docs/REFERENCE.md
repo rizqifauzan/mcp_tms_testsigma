@@ -392,11 +392,10 @@ All endpoints are under base `https://test-management.testsigma.com/api/v1`. Aut
 | 11 | `step_type` enum complete values? | Open | Low | Capture during a UI action that adds a step group reference inside a TC |
 | 12 | JWT vs API key lifetime difference? | Open | Medium | Generate API key in TMS UI, observe behavior over days |
 | 13 | Rate limit reset header semantics (negative number)? | Open | Low | Acknowledge as undocumented; ignore in client |
-| 6 | Step attachment upload flow? | Low (skip MVP) | Defer; tool tanpa attachment dulu |
-| 7 | Custom field schema discovery? | Medium | Inspect per-project response payload |
-| 8 | Project ID vs slug di URL? | Low | DevTools inspection |
-| 9 | Apakah ada webhook/event API? | Low | Defer ke future roadmap |
-| 10 | Multi-tenant: workspace concept? | Medium | Cek URL setelah login (mungkin ada `/workspaces/{id}/`) |
+| 14 | Step attachment upload flow? | Open (skip MVP) | Low | Defer; tools tanpa attachment dulu |
+| 15 | Custom field schema discovery? | Open | Low | Inspect per-project payload jika nanti muncul `custom_fields` field |
+| 16 | Webhook / event API? | Open | Low | Defer to future roadmap |
+| 17 | Multi-tenant: workspace concept? | Open | Low | Belum kelihatan di endpoint manapun — likely tenant = subdomain |
 
 ---
 
