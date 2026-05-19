@@ -101,6 +101,15 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 - Auth flow confirmed via `curl` test
 - Open questions #1-#4 di REFERENCE §8 closed
 
+**Phase 0 status (2026-05-19):**
+- ✅ Read endpoints documented for projects, folders, test_cases, test_runs, labels, users (REFERENCE §5)
+- ✅ Auth confirmed working via JWT bearer; Q2/Q4 closed, Q3 partially closed (reads only)
+- ❌ Q1 still open: no long-lived API key confirmed — user must check TMS UI Settings panel
+- ❌ Writes not yet captured (defer to DevTools during real create/update actions in UI)
+- ❌ Lookup table endpoint (status/priority/type → name) not discovered — **blocker for Phase 2 `create_test_case`**
+- ❌ Requirements/Jira link API surface not discovered — Phase 5 will need extra capture
+- ❌ Test Suites endpoint not discovered — Phase 4 design may need adjustment
+
 ### Phase 1 — Read-Only Tools (Confidence: 🟢 High)
 **Goal:** User bisa browse TMS data dari Claude tanpa buka UI.
 
@@ -121,18 +130,22 @@ Enable QA Engineers di squad GROW untuk berinteraksi dengan Testsigma (Cloud) me
 **Estimated effort:** 2-3 jam
 **Risk:** Low (read-only, no destructive ops)
 
-### Phase 2 — Full Test Case CRUD (Confidence: 🟢 High)
-**Goal:** Create/update/delete test case INCLUDING steps. Di TMS, test step = plain text `{ action, expected }` — lihat [REFERENCE §2 Test Case Fields](./docs/REFERENCE.md#test-case-fields-confirmed-from-docs). Tanpa NLP grammar, step CRUD jadi simple → masuk MVP.
+### Phase 2 — Full Test Case CRUD (Confidence: 🟡 Medium — revised after Phase 0)
+**Goal:** Create/update/delete test case INCLUDING steps.
+
+> ⚠️ **Phase 0 finding invalidates the original design.** TMS stores `steps` and `expected_results` as **single newline-delimited strings** (template_type `TCD`), NOT as arrays of `{action, expected}`. There is no `/test_cases/{id}/steps` sub-resource. Granular step CRUD tools (`add_step`, `update_step`, `delete_step`) cannot be 1-call API operations — they would have to read-modify-write the whole `steps` string client-side, which is racy and fragile.
+
+**Revised tool set:**
 
 | Tool | Resource | Behavior |
 |------|----------|----------|
-| `create_test_case` | Test Cases | Create dengan field set lengkap (name, desc, priority, type, status, labels, owner, folder, steps[], requirements[]) |
-| `update_test_case` | Test Cases | Update metadata + steps |
-| `delete_test_case` | Test Cases | Delete dengan confirmation prompt + server-side `confirm: true` flag |
-| `add_step` | Test Cases | Append step (action + expected) |
-| `update_step` | Test Cases | Edit step text |
-| `delete_step` | Test Cases | Remove step |
+| `create_test_case` | Test Cases | Create with `title`, `description`, `preconditions`, `steps` (string), `expected_results` (string), `*_id` lookups, `folder_id`, `labels` |
+| `update_test_case` | Test Cases | Patch any field including full `steps` / `expected_results` replacement |
+| `delete_test_case` | Test Cases | Delete with confirmation prompt |
+| ~~`add_step` / `update_step` / `delete_step`~~ | — | **Dropped** — not granular at API level. May add as a UX convenience that does read-modify-write with explicit "stale-read" guard (deferred). |
 | `create_folder` | Folders | Organize TC ke folder baru |
+
+**Pre-requisite for Phase 2 coding:** The status/priority/type/automation_type lookup endpoint must be captured first (see [REFERENCE §5 Lookup tables](./docs/REFERENCE.md#lookup-tables-status--priority--type--automation_type)) — without it, `create_test_case` can't know valid UUIDs for those required fields.
 
 **Estimated effort:** 3-4 jam
 **Risk:** Medium (write ops, butuh validation + idempotency)
