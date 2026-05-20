@@ -1,12 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "regions": ["sin1"],
-  "functions": {
-    "api/mcp.ts": {
-      "maxDuration": 30
-    }
-  },
-  "rewrites": [
-    { "source": "/mcp", "destination": "/api/mcp" }
-  ]
+  "regions": ["sin1"]
 }

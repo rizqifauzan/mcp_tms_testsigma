@@ -5,7 +5,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { buildServer } from "../src/server.js";
+import { buildServer } from "../api/_lib/server.js";
 
 const server = buildServer("smoke-test-fake-key");
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
