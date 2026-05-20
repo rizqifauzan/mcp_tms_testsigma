@@ -1,0 +1,25 @@
+{
+  "name": "mcp-tms-testsigma",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP server bridging Claude to Testsigma TMS REST API",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "vercel dev",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@vercel/node": "^5.0.0",
+    "typescript": "^5.6.0",
+    "vercel": "^39.0.0"
+  }
+}
