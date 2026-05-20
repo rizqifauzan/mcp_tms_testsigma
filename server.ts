@@ -36,7 +36,7 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
         name: "testsigma-tms-mcp",
         status: "ok",
         transport: "streamable-http",
-        hint: "POST MCP JSON-RPC requests here with X-Testsigma-Key header.",
+        hint: "POST MCP JSON-RPC requests to /mcp/<your_tms_api_key> (URL path) or /mcp with X-Testsigma-Key header.",
       }),
     );
     return;
@@ -48,9 +48,17 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
+  // Accept POST to /mcp (header auth) or /mcp/<key>/... (path auth).
+  // Reject other paths so we don't accept POSTs to / etc.
+  if (pathname !== "/mcp" && !pathname.startsWith("/mcp/")) {
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found. POST to /mcp or /mcp/<key>." }));
+    return;
+  }
+
   let apiKey: string;
   try {
-    apiKey = extractApiKey(req.headers);
+    apiKey = extractApiKey(pathname, req.headers);
   } catch (err) {
     if (err instanceof AuthError) {
       res.writeHead(err.status, { "Content-Type": "application/json" });
@@ -61,6 +69,13 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
   }
 
   const body = await readJsonBody(req);
+
+  // Strip the API key from req.url before handing off to the MCP transport
+  // so it never appears in transport-level logs, error messages, or
+  // session state derived from req.url.
+  if (pathname.startsWith("/mcp/")) {
+    req.url = "/mcp";
+  }
 
   const mcp = buildServer(apiKey);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
