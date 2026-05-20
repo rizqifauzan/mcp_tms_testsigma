@@ -1,10 +1,35 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { buildServer } from "./api/_lib/server.js";
 import { AuthError, extractApiKey } from "./api/_lib/auth.js";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const LANDING_PAGE_HTML = readFileSync(
+  path.join(__dirname, "public", "index.html"),
+  "utf8",
+);
+
+function pathnameOf(url: string | undefined): string {
+  if (!url) return "/";
+  const q = url.indexOf("?");
+  return q === -1 ? url : url.slice(0, q);
+}
+
 async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
+  const pathname = pathnameOf(req.url);
+
   if (req.method === "GET") {
+    if (pathname === "/" || pathname === "") {
+      res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Cache-Control": "public, max-age=300, must-revalidate",
+      });
+      res.end(LANDING_PAGE_HTML);
+      return;
+    }
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
       JSON.stringify({
