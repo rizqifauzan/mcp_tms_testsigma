@@ -13,7 +13,8 @@
     "deploy": "vercel deploy --prod",
     "smoke": "tsx scripts/smoke.mjs",
     "e2e": "tsx --env-file=.env scripts/e2e.mjs",
-    "e2e:phase2": "tsx --env-file=.env scripts/e2e_phase2.mjs"
+    "e2e:phase2": "tsx --env-file=.env scripts/e2e_phase2.mjs",
+    "e2e:phase4": "tsx --env-file=.env scripts/e2e_phase4.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.18.0",
