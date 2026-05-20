@@ -35,7 +35,7 @@
       </a>
       <nav class="hidden md:flex items-center gap-8 text-sm text-slate-600">
         <a href="#features" class="hover:text-slate-900">Features</a>
-        <a href="#how" class="hover:text-slate-900">How it works</a>
+        <a href="#setup" class="hover:text-slate-900">Setup</a>
         <a href="#pricing" class="hover:text-slate-900">Pricing</a>
         <a href="#faq" class="hover:text-slate-900">FAQ</a>
       </nav>
@@ -52,7 +52,7 @@
     <div class="relative max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
       <span class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
         <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
-        Phase 2 shipped · 18 MCP tools live
+        Phase 4 shipped · 25 MCP tools live
       </span>
       <h1 class="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
         Manage Testsigma tests<br class="hidden sm:block"/>
@@ -63,8 +63,8 @@
         Read, create, and update test cases, folders, suites, and plans through a single, well-typed tool surface.
       </p>
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <a href="#get-started" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition">
-          Connect to Claude Code
+        <a href="#setup" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition">
+          Setup in 5 minutes
           <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/></svg>
         </a>
         <a href="https://github.com/rizqifauzan/mcp_tms_testsigma" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition">
@@ -82,11 +82,15 @@
           <span class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
           <span class="ml-3 text-xs text-slate-400 font-mono">claude code · mcp settings</span>
         </div>
-<pre class="text-sm text-slate-100 px-5 py-5 overflow-x-auto leading-relaxed"><code><span class="text-slate-500"># Add a custom HTTP MCP server in Claude Code</span>
-<span class="text-blue-300">URL</span>    : https://your-deployment.vercel.app/mcp
-<span class="text-blue-300">Header</span> : X-Testsigma-Key: &lt;your TMS API key&gt;
+<pre class="text-sm text-slate-100 px-5 py-5 overflow-x-auto leading-relaxed"><code><span class="text-slate-500"># Claude Code (Terminal)</span>
+$ claude mcp add tms <span class="text-emerald-300">https://mcp-tms-testsigma.vercel.app/mcp</span> \
+    --transport http \
+    --header <span class="text-yellow-300">"X-Testsigma-Key: &lt;YOUR_KEY&gt;"</span>
 
-<span class="text-slate-500"># Then, in Claude:</span>
+<span class="text-slate-500"># Claude Web — paste this URL into Custom Connector:</span>
+https://mcp-tms-testsigma.vercel.app/mcp/<span class="text-yellow-300">&lt;YOUR_KEY&gt;</span>
+
+<span class="text-slate-500"># Then, in any Claude chat:</span>
 <span class="text-emerald-300">&gt;</span> List all test cases in folder "Checkout" and mark the
   failing one as <span class="text-yellow-300">In Review</span>.</code></pre>
       </div>
@@ -99,7 +103,7 @@
       <div class="max-w-2xl">
         <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Features</p>
         <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Everything you need to drive Testsigma TMS from your editor.</h2>
-        <p class="mt-4 text-slate-600">18 typed MCP tools covering the read and write surface of Testsigma Test Management — verified end-to-end against the real API.</p>
+        <p class="mt-4 text-slate-600">25 typed MCP tools covering the read, write, and execution surfaces of Testsigma Test Management — verified end-to-end against the real API.</p>
       </div>
 
       <div class="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -155,34 +159,171 @@
     </div>
   </section>
 
-  <!-- HOW IT WORKS -->
-  <section id="how" class="py-24">
+  <!-- SETUP TUTORIAL -->
+  <section id="setup" class="py-24">
     <div class="max-w-6xl mx-auto px-6">
       <div class="max-w-2xl">
-        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">How it works</p>
-        <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">From clone to "list my test cases" in under 5 minutes.</h2>
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Setup</p>
+        <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Connect in 5 minutes — Terminal or Browser.</h2>
+        <p class="mt-4 text-slate-600">Two auth modes are supported: header-based for Claude Code (most secure) and URL-path-based for Claude Web (when custom headers aren't available).</p>
       </div>
 
-      <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="relative rounded-xl border border-slate-200 p-6">
-          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">1</div>
-          <h3 class="mt-2 font-semibold text-slate-900">Deploy the server</h3>
-          <p class="mt-2 text-sm text-slate-600">Fork the repo, push to Vercel. Region <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">sin1</code> recommended. No DB required.</p>
-          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>vercel --prod</code></pre>
+      <!-- Step 1: Generate API key (shared step) -->
+      <div class="mt-14 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+        <div class="flex items-start gap-4">
+          <div class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">1</div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-slate-900">Generate your Testsigma API key</h3>
+            <p class="mt-2 text-sm text-slate-600">In Testsigma TMS web app, open <strong>your profile menu (top-right) → Settings → API Keys → Generate New Key</strong>. Name it something traceable like <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">Personal MCP — &lt;your name&gt;</code>.</p>
+            <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <strong>⚠️ Important:</strong> Every team member generates <em>their own</em> key — do not share. This preserves audit trail and per-user permissions.
+            </div>
+            <p class="mt-3 text-sm text-slate-600">Copy the key — it's a long JWT starting with <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">eyJ...</code> (~350 chars). You won't be able to see it again.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Choose your client -->
+      <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Claude Code (Terminal) -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col">
+          <div class="flex items-start gap-4">
+            <div class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">2A</div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-slate-900">Claude Code (Terminal)</h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">Most secure</span>
+              </div>
+              <p class="mt-2 text-sm text-slate-600">Uses the <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">X-Testsigma-Key</code> HTTP header — your key stays out of URLs and access logs.</p>
+            </div>
+          </div>
+
+          <div class="mt-5 space-y-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Add the MCP server</p>
+              <pre class="mt-2 text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto"><code>claude mcp add tms <span class="text-emerald-300">https://mcp-tms-testsigma.vercel.app/mcp</span> \
+  --transport http \
+  --header <span class="text-yellow-300">"X-Testsigma-Key: &lt;YOUR_KEY&gt;"</span></code></pre>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Verify</p>
+              <pre class="mt-2 text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto"><code>claude mcp list
+<span class="text-slate-500"># Should show: tms · http · 25 tools</span></code></pre>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Start a session</p>
+              <pre class="mt-2 text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto"><code>claude
+<span class="text-slate-500"># Inside Claude Code:</span>
+/mcp
+<span class="text-slate-500"># Verify "tms" appears with 25 tools</span></code></pre>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+            <strong class="text-slate-900">If you see <code>error: unknown option '--url'</code>:</strong> URL is positional, not a flag. Drop <code>--url</code> and pass the URL directly after the server name.
+          </div>
         </div>
 
-        <div class="relative rounded-xl border border-slate-200 p-6">
-          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">2</div>
-          <h3 class="mt-2 font-semibold text-slate-900">Grab your API key</h3>
-          <p class="mt-2 text-sm text-slate-600">In Testsigma TMS, open <strong>Settings → API Keys</strong> and generate a personal token. Copy it.</p>
-          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>X-Testsigma-Key: ts_••••••</code></pre>
-        </div>
+        <!-- Claude Web -->
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 sm:p-8 flex flex-col">
+          <div class="flex items-start gap-4">
+            <div class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">2B</div>
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <h3 class="text-lg font-semibold text-slate-900">Claude Web (claude.ai)</h3>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">Browser-friendly</span>
+              </div>
+              <p class="mt-2 text-sm text-slate-600">Claude Web doesn't support custom headers, so the key goes in the URL path. Treat the URL itself like a password.</p>
+            </div>
+          </div>
 
-        <div class="relative rounded-xl border border-slate-200 p-6">
-          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">3</div>
-          <h3 class="mt-2 font-semibold text-slate-900">Connect Claude Code</h3>
-          <p class="mt-2 text-sm text-slate-600">Add a custom HTTP MCP server with your deployment URL and the API key header. Done.</p>
-          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>/mcp add tms https://...</code></pre>
+          <div class="mt-5 space-y-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Open connector settings</p>
+              <ol class="mt-2 text-sm text-slate-700 space-y-1.5 list-decimal list-inside">
+                <li>Go to <a href="https://claude.ai" class="text-blue-600 hover:underline">claude.ai</a></li>
+                <li>Click your avatar (bottom-left) → <strong>Settings</strong></li>
+                <li>Open <strong>Connectors</strong> → <strong>Add custom connector</strong></li>
+              </ol>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Paste this URL</p>
+              <pre class="mt-2 text-xs bg-slate-900 text-slate-100 rounded-lg p-4 overflow-x-auto"><code><span class="text-slate-500"># Replace &lt;YOUR_KEY&gt; with your TMS API key (eyJ...)</span>
+https://mcp-tms-testsigma.vercel.app/mcp/<span class="text-yellow-300">&lt;YOUR_KEY&gt;</span></code></pre>
+            </div>
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Verify</p>
+              <p class="mt-2 text-sm text-slate-600">In a new chat, click the <span class="text-base">🔌</span> connector icon below the input. You should see <strong>Testsigma TMS</strong> with 25 tools.</p>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+            <strong>⚠️ Security:</strong> The URL contains your TMS key — don't share it in public Slack, commit to git, or screenshot it. If it leaks, immediately revoke the key in TMS Settings → API Keys.
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Try it -->
+      <div class="mt-6 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+        <div class="flex items-start gap-4">
+          <div class="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">3</div>
+          <div class="flex-1">
+            <h3 class="text-lg font-semibold text-slate-900">Try your first prompts</h3>
+            <p class="mt-2 text-sm text-slate-600">Copy any of these into Claude — it will pick the right tool automatically.</p>
+
+            <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Read</p>
+                <p class="mt-2 text-sm text-slate-700 font-mono leading-relaxed">"List 5 folders in project Grow"</p>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Create</p>
+                <p class="mt-2 text-sm text-slate-700 font-mono leading-relaxed">"Create a test case in folder Checkout, title 'Verify guest checkout', priority Major"</p>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bulk update</p>
+                <p class="mt-2 text-sm text-slate-700 font-mono leading-relaxed">"Reassign all draft TCs in folder X to john@cata.com"</p>
+              </div>
+              <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Execute</p>
+                <p class="mt-2 text-sm text-slate-700 font-mono leading-relaxed">"Start a static test run from TC GR-46, GR-47, GR-48 and mark GR-46 as Passed"</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="mt-10">
+        <p class="text-sm font-semibold uppercase tracking-wide text-slate-500">Troubleshooting</p>
+        <div class="mt-3 space-y-2">
+          <details class="group rounded-lg border border-slate-200 bg-white p-4">
+            <summary class="flex cursor-pointer items-center justify-between text-sm font-medium text-slate-900">
+              I see 0 tools in <code class="text-xs bg-slate-100 px-1.5 py-0.5 rounded">/mcp</code> or "Failed to connect"
+              <svg class="chev h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <ol class="mt-3 text-sm text-slate-600 space-y-1.5 list-decimal list-inside">
+              <li>Verify the API key is still ACTIVE in TMS Settings → API Keys.</li>
+              <li>Restart Claude Code (<code>/exit</code>, then <code>claude</code>) to refresh tool cache.</li>
+              <li>Re-add the server: <code>claude mcp remove tms</code> then add again with the latest URL.</li>
+              <li>Test the endpoint directly with <code>curl</code> (see <a href="https://github.com/rizqifauzan/mcp_tms_testsigma#troubleshooting" class="text-blue-600 hover:underline">README</a>).</li>
+            </ol>
+          </details>
+          <details class="group rounded-lg border border-slate-200 bg-white p-4">
+            <summary class="flex cursor-pointer items-center justify-between text-sm font-medium text-slate-900">
+              How do I rotate or revoke my API key?
+              <svg class="chev h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <p class="mt-3 text-sm text-slate-600">In TMS, open Settings → API Keys → click <strong>Revoke</strong> next to the old key, then <strong>Generate New Key</strong>. Update the URL or header in your client. Old key stops working immediately.</p>
+          </details>
+          <details class="group rounded-lg border border-slate-200 bg-white p-4">
+            <summary class="flex cursor-pointer items-center justify-between text-sm font-medium text-slate-900">
+              A delete tool was called without my approval
+              <svg class="chev h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+            </summary>
+            <p class="mt-3 text-sm text-slate-600">Destructive tools (<code>delete_test_case</code>, <code>delete_folder</code>, <code>delete_test_plan</code>, <code>delete_test_run</code>) require explicit confirmation in Claude. Check your <strong>Permissions</strong> settings — you may have previously chosen "Always allow" for that tool. You can reset per-tool permissions in Claude Code's settings.</p>
+          </details>
         </div>
       </div>
     </div>
@@ -204,7 +345,7 @@
           <span class="text-slate-500">/ forever</span>
         </div>
         <ul class="mt-6 space-y-3 text-sm text-slate-700">
-          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>All 18 MCP tools (read + write)</li>
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>All 25 MCP tools (read + write + execute)</li>
           <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>One-click Vercel deploy</li>
           <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Unlimited users &amp; projects</li>
           <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Community support via GitHub</li>
@@ -243,15 +384,7 @@
             Which Claude clients are supported?
             <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
           </summary>
-          <p class="mt-3 text-sm text-slate-600">Any MCP-compatible client. Tested primarily against Claude Code (CLI, desktop, and web). Claude Desktop also works via a custom HTTP MCP entry.</p>
-        </details>
-
-        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
-          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
-            Is Jira integration supported?
-            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          </summary>
-          <p class="mt-3 text-sm text-slate-600">Phase 3 will provide orchestration tools that <em>combine</em> Testsigma data with Jira (via your separate Jira MCP). Direct Jira-link writes inside TMS aren't exposed by the TMS API.</p>
+          <p class="mt-3 text-sm text-slate-600">Any MCP-compatible client. Two auth flows are supported: <strong>header-based</strong> (X-Testsigma-Key) for Claude Code CLI/desktop, and <strong>URL-path-based</strong> (<code>/mcp/&lt;key&gt;</code>) for Claude Web where custom headers aren't available. Both paths share the same 25 tools.</p>
         </details>
 
         <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
@@ -259,7 +392,15 @@
             Is it safe to give it write access to my test suite?
             <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
           </summary>
-          <p class="mt-3 text-sm text-slate-600">Every write tool requires explicit user approval in Claude Code. The Phase 2 release was verified end-to-end with net-zero state changes before merge.</p>
+          <p class="mt-3 text-sm text-slate-600">Every destructive tool (<code>delete_*</code>) requires explicit approval in your Claude client. Phases 2 and 4 were each verified end-to-end with net-zero state changes (everything created during testing was deleted in the same run) before merge.</p>
+        </details>
+
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            Should everyone on the team share one API key?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">No — each team member should generate their own personal TMS API key. This preserves per-user audit trail in TMS, respects per-user permissions, and makes offboarding clean (revoke one key, everyone else is unaffected).</p>
         </details>
       </div>
     </div>
@@ -295,7 +436,7 @@
         <p class="font-semibold text-slate-900">Product</p>
         <ul class="mt-3 space-y-2 text-slate-600">
           <li><a href="#features" class="hover:text-slate-900">Features</a></li>
-          <li><a href="#how" class="hover:text-slate-900">How it works</a></li>
+          <li><a href="#setup" class="hover:text-slate-900">Setup</a></li>
           <li><a href="#pricing" class="hover:text-slate-900">Pricing</a></li>
           <li><a href="#faq" class="hover:text-slate-900">FAQ</a></li>
         </ul>
