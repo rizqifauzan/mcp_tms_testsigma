@@ -23,6 +23,26 @@ import {
   listTestRunsInputSchema,
 } from "./tools/test_runs.js";
 import { listLabelOptionsInputSchema, makeListLabelOptions } from "./tools/lookups.js";
+import {
+  bulkUpdateTestCasesInputSchema,
+  createTestCaseInputSchema,
+  deleteTestCase,
+  deleteTestCaseInputSchema,
+  makeBulkUpdateTestCases,
+  makeCreateTestCase,
+  makeUpdateTestCase,
+  updateTestCaseInputSchema,
+} from "./tools/test_cases_write.js";
+import {
+  createFolder,
+  createFolderInputSchema,
+  deleteFolder,
+  deleteFolderInputSchema,
+  moveFolder,
+  moveFolderInputSchema,
+  updateFolder,
+  updateFolderInputSchema,
+} from "./tools/folders_write.js";
 import type { HybridResponse } from "./format.js";
 
 type ToolHandler = (client: TmsClient, args: unknown) => Promise<HybridResponse>;
@@ -115,6 +135,70 @@ function buildTools(apiKey: string): ToolDef[] {
         "Fetch reference data tables: test_case_statuses, test_case_priorities, test_case_types, test_case_automation_types, test_run_statuses. Use this to translate UUID IDs into human-readable names when displaying or filtering. Results are cached for 5 minutes per key.",
       inputSchema: listLabelOptionsInputSchema,
       handler: makeListLabelOptions(apiKey),
+    },
+    {
+      name: "create_test_case",
+      title: "Create a test case",
+      description:
+        "Create a new test case in a project folder. The TCD template (default, used by GROW) treats steps/expected_results as newline-delimited text blobs. STEPS template requires individual_steps[]. Status/priority/type/owner/labels accept either UUIDs OR human-readable names (resolved against lookup tables).",
+      inputSchema: createTestCaseInputSchema,
+      handler: makeCreateTestCase(apiKey),
+    },
+    {
+      name: "update_test_case",
+      title: "Update a test case",
+      description:
+        "Partially update fields of a test case identified by UUID or human ID (e.g. GR-7). Only the fields you supply will change. Status/priority/type/owner/labels accept names or UUIDs. Other fields are unchanged. Reads the current TC first to preserve fields you don't touch.",
+      inputSchema: updateTestCaseInputSchema,
+      handler: makeUpdateTestCase(apiKey),
+    },
+    {
+      name: "delete_test_case",
+      title: "Delete a test case",
+      description:
+        "Permanently delete a test case. Destructive — Claude Code will prompt the user for permission before invoking. Accepts UUID or human ID.",
+      inputSchema: deleteTestCaseInputSchema,
+      handler: deleteTestCase,
+    },
+    {
+      name: "bulk_update_test_cases",
+      title: "Bulk update multiple test cases",
+      description:
+        "Apply the same field changes to multiple test cases in one call (e.g. reassign owner across many TCs, bulk re-label). Sequential to stay under TMS rate limit (~10 req/sec). Returns per-TC success/failure summary.",
+      inputSchema: bulkUpdateTestCasesInputSchema,
+      handler: makeBulkUpdateTestCases(apiKey),
+    },
+    {
+      name: "create_folder",
+      title: "Create a folder",
+      description:
+        "Create a new folder in a project. If parent_folder_id is supplied, the new folder is reparented under it via a follow-up move call. Without parent_folder_id the folder lands at root.",
+      inputSchema: createFolderInputSchema,
+      handler: createFolder,
+    },
+    {
+      name: "update_folder",
+      title: "Rename or reorder a folder",
+      description:
+        "Update a folder's name and/or order. To change parent, use move_folder instead.",
+      inputSchema: updateFolderInputSchema,
+      handler: updateFolder,
+    },
+    {
+      name: "move_folder",
+      title: "Move a folder to a new parent",
+      description:
+        "Reparent a folder. Pass parent_folder_id to nest it, or null to move it to root.",
+      inputSchema: moveFolderInputSchema,
+      handler: moveFolder,
+    },
+    {
+      name: "delete_folder",
+      title: "Delete a folder",
+      description:
+        "Permanently delete a folder. Destructive — Claude Code will prompt the user for permission. Test cases inside the folder may also be affected (TMS behavior on deleted folders depends on server config; verify before bulk deletes).",
+      inputSchema: deleteFolderInputSchema,
+      handler: deleteFolder,
     },
   ];
 }
