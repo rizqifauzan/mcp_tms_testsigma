@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { buildServer } from "./_lib/server.js";
-import { AuthError, extractApiKey } from "./_lib/auth.js";
+import { buildServer } from "./api/_lib/server.js";
+import { AuthError, extractApiKey } from "./api/_lib/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {
@@ -31,16 +31,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     throw err;
   }
 
-  const server = buildServer(apiKey);
+  const mcp = buildServer(apiKey);
   const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
   res.on("close", () => {
     void transport.close();
-    void server.close();
+    void mcp.close();
   });
 
   try {
-    await server.connect(transport);
+    await mcp.connect(transport);
     await transport.handleRequest(req, res, req.body);
   } catch (err) {
     if (!res.headersSent) {

@@ -15,6 +15,6 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["api/**/*"],
+  "include": ["server.ts", "api/**/*"],
   "exclude": ["node_modules", ".vercel"]
 }
