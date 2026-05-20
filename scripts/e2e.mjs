@@ -4,7 +4,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { buildServer } from "../src/server.js";
+import { buildServer } from "../api/_lib/server.js";
 
 const KEY = process.env.TMS_API_KEY;
 if (!KEY) {
