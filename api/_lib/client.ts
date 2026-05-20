@@ -58,12 +58,19 @@ export class TmsClient {
 
   /**
    * GET a list endpoint. The TMS envelope wraps the array under a single
-   * `data.<resource_plural>` key (e.g. `data.projects`). This unwraps it.
+   * `data.<resource_plural>` key (e.g. `data.projects`). A few endpoints
+   * (`/users`) return `data` as a direct array — we handle both shapes.
    */
   async getList<T>(path: string, query?: Query): Promise<ListResult<T>> {
-    const env = await this.request<EnvelopeList>(path, query);
-    const items = takeOnlyValue(env.data) as T[];
-    return { items, page_info: env.page_info };
+    const env = await this.request<{ data: unknown; page_info?: PageInfo }>("GET", path, { query });
+    const items = (Array.isArray(env.data) ? env.data : takeOnlyValue(env.data as Record<string, unknown>)) as T[];
+    const page_info: PageInfo = env.page_info ?? {
+      page_size: items.length,
+      total_count: items.length,
+      next: null,
+      prev: null,
+    };
+    return { items, page_info };
   }
 
   /**
@@ -71,23 +78,62 @@ export class TmsClient {
    * `data.<resource_singular>` key (e.g. `data.project`).
    */
   async getOne<T>(path: string): Promise<T> {
-    const env = await this.request<EnvelopeOne>(path);
+    const env = await this.request<EnvelopeOne>("GET", path);
     return takeOnlyValue(env.data) as T;
   }
 
-  private async request<T>(path: string, query?: Query): Promise<T> {
-    const url = buildUrl(path, query);
-    const res = await fetch(url, {
-      method: "GET",
+  /**
+   * POST a body and unwrap the single-key envelope. Used for create + reparent.
+   */
+  async postOne<T>(path: string, body: unknown): Promise<T> {
+    const env = await this.request<EnvelopeOne>("POST", path, { body });
+    return takeOnlyValue(env.data) as T;
+  }
+
+  /**
+   * PUT a body and unwrap the single-key envelope. Used for update.
+   */
+  async putOne<T>(path: string, body: unknown): Promise<T> {
+    const env = await this.request<EnvelopeOne>("PUT", path, { body });
+    return takeOnlyValue(env.data) as T;
+  }
+
+  /**
+   * DELETE. Many delete endpoints return an empty body or just `{ message }`.
+   * We don't unwrap — caller usually doesn't need the response.
+   */
+  async delete(path: string): Promise<void> {
+    await this.request<unknown>("DELETE", path);
+  }
+
+  private async request<T>(
+    method: "GET" | "POST" | "PUT" | "DELETE",
+    path: string,
+    opts?: { query?: Query; body?: unknown },
+  ): Promise<T> {
+    const url = buildUrl(path, opts?.query);
+    const hasBody = opts?.body !== undefined;
+    const init: RequestInit = {
+      method,
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
         Accept: "application/json",
+        ...(hasBody ? { "Content-Type": "application/json" } : {}),
       },
-    });
+      ...(hasBody ? { body: JSON.stringify(opts!.body) } : {}),
+    };
 
+    const res = await fetch(url, init);
     const requestId = res.headers.get("x-tms-api-request-id");
     const ctype = res.headers.get("content-type") ?? "";
-    const body = ctype.includes("application/json") ? await res.json() : await res.text();
+    let body: unknown = undefined;
+    if (ctype.includes("application/json")) {
+      const text = await res.text();
+      body = text.length > 0 ? JSON.parse(text) : undefined;
+    } else {
+      const text = await res.text();
+      body = text.length > 0 ? text : undefined;
+    }
 
     if (!res.ok) {
       const msg = extractErrorMessage(body) ?? `TMS API ${res.status}`;
