@@ -43,6 +43,24 @@ import {
   updateFolder,
   updateFolderInputSchema,
 } from "./tools/folders_write.js";
+import {
+  createTestPlanInputSchema,
+  deleteTestPlan,
+  deleteTestPlanInputSchema,
+  makeCreateTestPlan,
+  makeUpdateTestPlan,
+  updateTestPlanInputSchema,
+} from "./tools/test_plans_write.js";
+import {
+  closeTestRun,
+  closeTestRunInputSchema,
+  createTestRunInputSchema,
+  deleteTestRun,
+  deleteTestRunInputSchema,
+  makeCreateTestRun,
+  makeMarkTestRunResult,
+  markTestRunResultInputSchema,
+} from "./tools/test_runs_write.js";
 import type { HybridResponse } from "./format.js";
 
 type ToolHandler = (client: TmsClient, args: unknown) => Promise<HybridResponse>;
@@ -199,6 +217,62 @@ function buildTools(apiKey: string): ToolDef[] {
         "Permanently delete a folder. Destructive — Claude Code will prompt the user for permission. Test cases inside the folder may also be affected (TMS behavior on deleted folders depends on server config; verify before bulk deletes).",
       inputSchema: deleteFolderInputSchema,
       handler: deleteFolder,
+    },
+    {
+      name: "create_test_plan",
+      title: "Create a test plan",
+      description:
+        "Create a new test plan in a project. A plan groups related test runs (e.g. all runs for a sprint or release). Only `title` is required; dates accept epoch MILLISECONDS.",
+      inputSchema: createTestPlanInputSchema,
+      handler: makeCreateTestPlan(apiKey),
+    },
+    {
+      name: "update_test_plan",
+      title: "Update a test plan",
+      description:
+        "Update title/description/dates/labels of a test plan. Fetches current state, merges your changes, and PUTs back so omitted fields are preserved.",
+      inputSchema: updateTestPlanInputSchema,
+      handler: makeUpdateTestPlan(apiKey),
+    },
+    {
+      name: "delete_test_plan",
+      title: "Delete a test plan",
+      description:
+        "Permanently delete a test plan. Destructive — Claude Code will prompt the user. Does NOT delete the runs inside the plan; they become unlinked.",
+      inputSchema: deleteTestPlanInputSchema,
+      handler: deleteTestPlan,
+    },
+    {
+      name: "create_test_run",
+      title: "Create a test run (execution)",
+      description:
+        "Start a test execution. STATIC mode = explicit list of TCs (best for ad-hoc runs); DYNAMIC mode = filter-based, TCs matching the rules are included automatically including ones added later (best for recurring regression runs). Test case IDs in STATIC mode accept UUIDs OR human IDs (e.g. GR-46). Assignee defaults to first active user if omitted. Dates are epoch MILLISECONDS.",
+      inputSchema: createTestRunInputSchema,
+      handler: makeCreateTestRun(apiKey),
+    },
+    {
+      name: "mark_test_run_result",
+      title: "Mark per-TC results on a test run",
+      description:
+        "Record execution outcomes (Passed/Failed/Blocked/Skipped/UnTested/In Progress) for one or more TCs in a run. Accepts status by name OR UUID. Multiple results can be marked in one call. Does NOT support attachment uploads in this version — for screenshots/logs use the TMS web UI.",
+      inputSchema: markTestRunResultInputSchema,
+      handler: makeMarkTestRunResult(apiKey),
+    },
+    {
+      name: "close_test_run",
+      title: "Close a test run",
+      description:
+        "Finalize a test run by setting its status to CLOSED. Server auto-fills the closed_by field with the calling user. Cannot be reopened after this — use carefully.",
+      inputSchema: closeTestRunInputSchema,
+      handler: closeTestRun,
+    },
+    {
+      name: "delete_test_run",
+      title: "Delete a test run",
+      description:
+        "Permanently delete a test run and its results. Destructive — Claude Code will prompt the user. Useful for cleaning up experimental or accidentally-created runs.",
+      inputSchema: deleteTestRunInputSchema,
+      handler: deleteTestRun,
     },
   ];
 }

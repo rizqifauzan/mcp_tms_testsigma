@@ -206,6 +206,24 @@ export async function defaultUser(client: TmsClient, apiKey: string): Promise<st
 }
 
 /**
+ * Resolve a test case ID input (UUID or human ID like "GR-46") to a UUID.
+ * If already a UUID, returns it unchanged. Otherwise fetches the TC detail
+ * to extract its UUID. Per-call cost: one GET per non-UUID input.
+ */
+export async function resolveTestCaseId(
+  client: TmsClient,
+  projectId: string,
+  input: string,
+): Promise<string> {
+  if (UUID_RE.test(input)) return input;
+  type TC = { id: string };
+  const tc = await client.getOne<TC>(
+    `/projects/${encodeURIComponent(projectId)}/test_cases/${encodeURIComponent(input)}`,
+  );
+  return tc.id;
+}
+
+/**
  * Resolve label inputs to UUIDs. Postman doc is ambiguous on whether the
  * create_test_case body's `label_ids` field accepts names or only UUIDs —
  * for safety we resolve names → UUIDs here. If a name doesn't exist we

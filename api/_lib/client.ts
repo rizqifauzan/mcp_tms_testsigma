@@ -106,6 +106,39 @@ export class TmsClient {
     await this.request<unknown>("DELETE", path);
   }
 
+  /**
+   * Multipart PUT/POST. TMS uses multipart/form-data for endpoints that
+   * accept attachments (e.g. update_test_run_result). For now we only
+   * support a single `data` text part — no file uploads — which covers
+   * mark_test_run_result without screenshots.
+   */
+  async multipart<T>(
+    method: "POST" | "PUT",
+    path: string,
+    fields: Record<string, string>,
+  ): Promise<T> {
+    const form = new FormData();
+    for (const [k, v] of Object.entries(fields)) form.append(k, v);
+    const url = buildUrl(path);
+    const res = await fetch(url, {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        Accept: "application/json",
+        // Don't set Content-Type — fetch sets multipart boundary automatically.
+      },
+      body: form,
+    });
+    const requestId = res.headers.get("x-tms-api-request-id");
+    const text = await res.text();
+    const body = text.length > 0 ? safeJson(text) : undefined;
+    if (!res.ok) {
+      const msg = extractErrorMessage(body) ?? `TMS API ${res.status}`;
+      throw new TmsApiError(msg, res.status, requestId, body ?? text);
+    }
+    return body as T;
+  }
+
   private async request<T>(
     method: "GET" | "POST" | "PUT" | "DELETE",
     path: string,
@@ -152,6 +185,14 @@ function takeOnlyValue(obj: Record<string, unknown>): unknown {
     throw new Error(`TMS response data envelope had multiple keys: ${keys.join(", ")}`);
   }
   return obj[keys[0]!];
+}
+
+function safeJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
 }
 
 function extractErrorMessage(body: unknown): string | null {
