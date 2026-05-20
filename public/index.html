@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MCP TMS Testsigma — Bring your test management into Claude Code</title>
+  <meta name="description" content="An open-source MCP server that connects Testsigma Test Management to Claude Code. Read, create, and update test cases, folders, and plans — directly from your editor." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+    .grid-bg {
+      background-image:
+        linear-gradient(to right, rgba(15,23,42,0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15,23,42,0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(ellipse at top, black 40%, transparent 75%);
+      -webkit-mask-image: radial-gradient(ellipse at top, black 40%, transparent 75%);
+    }
+    details[open] summary .chev { transform: rotate(180deg); }
+    .chev { transition: transform .2s ease; }
+  </style>
+</head>
+<body class="bg-white text-slate-800 antialiased">
+
+  <!-- NAV -->
+  <header class="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-100">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <a href="#" class="flex items-center gap-2 font-semibold text-slate-900">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold">M</span>
+        <span>MCP TMS Testsigma</span>
+      </a>
+      <nav class="hidden md:flex items-center gap-8 text-sm text-slate-600">
+        <a href="#features" class="hover:text-slate-900">Features</a>
+        <a href="#how" class="hover:text-slate-900">How it works</a>
+        <a href="#pricing" class="hover:text-slate-900">Pricing</a>
+        <a href="#faq" class="hover:text-slate-900">FAQ</a>
+      </nav>
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/rizqifauzan/mcp_tms_testsigma" class="hidden sm:inline text-sm text-slate-600 hover:text-slate-900">GitHub</a>
+        <a href="#get-started" class="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 transition">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 grid-bg pointer-events-none"></div>
+    <div class="relative max-w-6xl mx-auto px-6 pt-20 pb-24 text-center">
+      <span class="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+        <span class="h-1.5 w-1.5 rounded-full bg-blue-500"></span>
+        Phase 2 shipped · 18 MCP tools live
+      </span>
+      <h1 class="mt-6 text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900 leading-tight">
+        Manage Testsigma tests<br class="hidden sm:block"/>
+        without leaving <span class="text-blue-600">Claude Code</span>.
+      </h1>
+      <p class="mt-6 mx-auto max-w-2xl text-lg text-slate-600">
+        An open-source MCP server that bridges <strong>Testsigma Test Management</strong> with Claude Code.
+        Read, create, and update test cases, folders, suites, and plans through a single, well-typed tool surface.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a href="#get-started" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition">
+          Connect to Claude Code
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/></svg>
+        </a>
+        <a href="https://github.com/rizqifauzan/mcp_tms_testsigma" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.87-1.54-3.87-1.54-.52-1.33-1.28-1.68-1.28-1.68-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.74.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.17 1.18a11 11 0 015.78 0c2.2-1.49 3.17-1.18 3.17-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.15 0 1.55-.01 2.8-.01 3.18 0 .31.21.68.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/></svg>
+          View on GitHub
+        </a>
+      </div>
+      <p class="mt-4 text-xs text-slate-500">Free &amp; open source · Self-host on Vercel · BYO Testsigma API key</p>
+
+      <!-- Code preview -->
+      <div class="mt-14 mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-slate-900 shadow-xl overflow-hidden text-left">
+        <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-800 bg-slate-900">
+          <span class="h-2.5 w-2.5 rounded-full bg-red-400"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-yellow-400"></span>
+          <span class="h-2.5 w-2.5 rounded-full bg-green-400"></span>
+          <span class="ml-3 text-xs text-slate-400 font-mono">claude code · mcp settings</span>
+        </div>
+<pre class="text-sm text-slate-100 px-5 py-5 overflow-x-auto leading-relaxed"><code><span class="text-slate-500"># Add a custom HTTP MCP server in Claude Code</span>
+<span class="text-blue-300">URL</span>    : https://your-deployment.vercel.app/mcp
+<span class="text-blue-300">Header</span> : X-Testsigma-Key: &lt;your TMS API key&gt;
+
+<span class="text-slate-500"># Then, in Claude:</span>
+<span class="text-emerald-300">&gt;</span> List all test cases in folder "Checkout" and mark the
+  failing one as <span class="text-yellow-300">In Review</span>.</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section id="features" class="py-24 bg-slate-50 border-y border-slate-100">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="max-w-2xl">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Features</p>
+        <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Everything you need to drive Testsigma TMS from your editor.</h2>
+        <p class="mt-4 text-slate-600">18 typed MCP tools covering the read and write surface of Testsigma Test Management — verified end-to-end against the real API.</p>
+      </div>
+
+      <div class="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- card -->
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M5 21h14a2 2 0 002-2V7l-5-5H5a2 2 0 00-2 2v15a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">Test case CRUD</h3>
+          <p class="mt-2 text-sm text-slate-600">Create, read, update, and delete test cases with full step and label support — including bulk updates.</p>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">Folder management</h3>
+          <p class="mt-2 text-sm text-slate-600">Organize your test suite tree: create, rename, move, and delete folders without touching the UI.</p>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">Test plans &amp; runs</h3>
+          <p class="mt-2 text-sm text-slate-600">Trigger plans, read run history, and mark results — straight from a Claude conversation. <span class="text-blue-600">(Phase 4)</span></p>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">Serverless &amp; fast</h3>
+          <p class="mt-2 text-sm text-slate-600">Deployed on Vercel (region <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">sin1</code>) with cold starts under 300ms.</p>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c1.657 0 3-1.343 3-3S13.657 5 12 5s-3 1.343-3 3 1.343 3 3 3zm0 0v2m-6 8h12a2 2 0 002-2v-3a4 4 0 00-4-4H8a4 4 0 00-4 4v3a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">BYO API key</h3>
+          <p class="mt-2 text-sm text-slate-600">Your Testsigma API key never leaves your client. The server is stateless and never logs credentials.</p>
+        </div>
+
+        <div class="rounded-xl bg-white p-6 border border-slate-200 hover:border-blue-300 hover:shadow-sm transition">
+          <div class="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/></svg>
+          </div>
+          <h3 class="mt-4 font-semibold text-slate-900">Open source &amp; auditable</h3>
+          <p class="mt-2 text-sm text-slate-600">MIT-licensed. Every endpoint mapped in a single reference doc — no hidden behavior.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" class="py-24">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="max-w-2xl">
+        <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">How it works</p>
+        <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">From clone to "list my test cases" in under 5 minutes.</h2>
+      </div>
+
+      <div class="mt-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="relative rounded-xl border border-slate-200 p-6">
+          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">1</div>
+          <h3 class="mt-2 font-semibold text-slate-900">Deploy the server</h3>
+          <p class="mt-2 text-sm text-slate-600">Fork the repo, push to Vercel. Region <code class="text-xs bg-slate-100 px-1 py-0.5 rounded">sin1</code> recommended. No DB required.</p>
+          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>vercel --prod</code></pre>
+        </div>
+
+        <div class="relative rounded-xl border border-slate-200 p-6">
+          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">2</div>
+          <h3 class="mt-2 font-semibold text-slate-900">Grab your API key</h3>
+          <p class="mt-2 text-sm text-slate-600">In Testsigma TMS, open <strong>Settings → API Keys</strong> and generate a personal token. Copy it.</p>
+          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>X-Testsigma-Key: ts_••••••</code></pre>
+        </div>
+
+        <div class="relative rounded-xl border border-slate-200 p-6">
+          <div class="absolute -top-3 left-6 inline-flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white text-sm font-bold">3</div>
+          <h3 class="mt-2 font-semibold text-slate-900">Connect Claude Code</h3>
+          <p class="mt-2 text-sm text-slate-600">Add a custom HTTP MCP server with your deployment URL and the API key header. Done.</p>
+          <pre class="mt-4 text-xs bg-slate-900 text-slate-100 rounded-lg p-3 overflow-x-auto"><code>/mcp add tms https://...</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing" class="py-24 bg-slate-50 border-y border-slate-100">
+    <div class="max-w-6xl mx-auto px-6 text-center">
+      <p class="text-sm font-semibold uppercase tracking-wide text-blue-600">Pricing</p>
+      <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Free. Forever.</h2>
+      <p class="mt-4 text-slate-600 max-w-xl mx-auto">It's open source — there's nothing to sell. You only pay for your own infrastructure (Vercel's free tier is more than enough).</p>
+
+      <div class="mt-12 max-w-md mx-auto rounded-2xl border-2 border-blue-600 bg-white p-8 text-left shadow-lg relative">
+        <span class="absolute -top-3 right-6 rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">Only plan</span>
+        <h3 class="text-lg font-semibold text-slate-900">Self-hosted</h3>
+        <p class="mt-2 text-slate-600 text-sm">Everything, included.</p>
+        <div class="mt-6 flex items-baseline gap-2">
+          <span class="text-5xl font-extrabold text-slate-900">$0</span>
+          <span class="text-slate-500">/ forever</span>
+        </div>
+        <ul class="mt-6 space-y-3 text-sm text-slate-700">
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>All 18 MCP tools (read + write)</li>
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>One-click Vercel deploy</li>
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Unlimited users &amp; projects</li>
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>Community support via GitHub</li>
+          <li class="flex items-start gap-2"><svg class="h-5 w-5 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>MIT license — fork freely</li>
+        </ul>
+        <a href="#get-started" class="mt-8 inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition">Get started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="py-24">
+    <div class="max-w-3xl mx-auto px-6">
+      <p class="text-sm font-semibold uppercase tracking-wide text-blue-600 text-center">FAQ</p>
+      <h2 class="mt-2 text-3xl sm:text-4xl font-bold tracking-tight text-slate-900 text-center">Questions, answered.</h2>
+
+      <div class="mt-10 space-y-3">
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            What's the difference between Testsigma TMS and the Testsigma automation platform?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">TMS is Testsigma's <strong>Test Management</strong> product (manual test cases, plans, results). The automation platform is a separate product with its own API. This MCP server targets TMS only.</p>
+        </details>
+
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            Do I need to host this myself?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">Yes — but it takes one click on Vercel and runs comfortably on the free tier. Self-hosting also means your API key never goes through a third-party server.</p>
+        </details>
+
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            Which Claude clients are supported?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">Any MCP-compatible client. Tested primarily against Claude Code (CLI, desktop, and web). Claude Desktop also works via a custom HTTP MCP entry.</p>
+        </details>
+
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            Is Jira integration supported?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">Phase 3 will provide orchestration tools that <em>combine</em> Testsigma data with Jira (via your separate Jira MCP). Direct Jira-link writes inside TMS aren't exposed by the TMS API.</p>
+        </details>
+
+        <details class="group rounded-xl border border-slate-200 bg-white p-5 open:shadow-sm">
+          <summary class="flex cursor-pointer items-center justify-between font-medium text-slate-900">
+            Is it safe to give it write access to my test suite?
+            <svg class="chev h-5 w-5 text-slate-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+          </summary>
+          <p class="mt-3 text-sm text-slate-600">Every write tool requires explicit user approval in Claude Code. The Phase 2 release was verified end-to-end with net-zero state changes before merge.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="get-started" class="py-24 bg-gradient-to-b from-white to-blue-50 border-t border-slate-100">
+    <div class="max-w-3xl mx-auto px-6 text-center">
+      <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">Ready to ship tests faster?</h2>
+      <p class="mt-4 text-slate-600">Clone the repo, deploy in a minute, and start managing Testsigma TMS from the same place you write code.</p>
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a href="https://github.com/rizqifauzan/mcp_tms_testsigma" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition">
+          Get the code on GitHub
+        </a>
+        <a href="https://vercel.com/new" class="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition">
+          Deploy to Vercel
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-slate-100 bg-white">
+    <div class="max-w-6xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
+      <div class="col-span-2">
+        <div class="flex items-center gap-2 font-semibold text-slate-900">
+          <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white text-sm font-bold">M</span>
+          MCP TMS Testsigma
+        </div>
+        <p class="mt-3 text-slate-600 max-w-sm">Open-source MCP server bridging Testsigma Test Management and Claude Code. Built by the community.</p>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-900">Product</p>
+        <ul class="mt-3 space-y-2 text-slate-600">
+          <li><a href="#features" class="hover:text-slate-900">Features</a></li>
+          <li><a href="#how" class="hover:text-slate-900">How it works</a></li>
+          <li><a href="#pricing" class="hover:text-slate-900">Pricing</a></li>
+          <li><a href="#faq" class="hover:text-slate-900">FAQ</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="font-semibold text-slate-900">Resources</p>
+        <ul class="mt-3 space-y-2 text-slate-600">
+          <li><a href="https://github.com/rizqifauzan/mcp_tms_testsigma" class="hover:text-slate-900">GitHub</a></li>
+          <li><a href="https://github.com/rizqifauzan/mcp_tms_testsigma/blob/main/docs/REFERENCE.md" class="hover:text-slate-900">API reference</a></li>
+          <li><a href="https://github.com/rizqifauzan/mcp_tms_testsigma/blob/main/PROJECT_PLAN.md" class="hover:text-slate-900">Roadmap</a></li>
+          <li><a href="https://modelcontextprotocol.io" class="hover:text-slate-900">About MCP</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-slate-100">
+      <div class="max-w-6xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500">
+        <p>© 2026 mcp_tms_testsigma contributors. MIT licensed.</p>
+        <p class="mt-2 sm:mt-0">Not affiliated with Testsigma Inc.</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
