@@ -1,10 +1,10 @@
 // Real end-to-end test against TMS API.
 //
-//   node --env-file=.env --experimental-strip-types scripts/e2e.mjs
+//   npm run e2e   (or: npx tsx --env-file=.env scripts/e2e.mjs)
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { buildServer } from "../src/server.ts";
+import { buildServer } from "../src/server.js";
 
 const KEY = process.env.TMS_API_KEY;
 if (!KEY) {

@@ -28,8 +28,9 @@ See [`PROJECT_PLAN.md` §4 Timeline](./PROJECT_PLAN.md) for detail.
 
 ```bash
 npm install
-npm run build         # typecheck only
-node --experimental-strip-types scripts/smoke.mjs   # in-memory MCP smoke test
+npm run build      # typecheck only
+npm run smoke      # in-memory MCP smoke test (no network)
+npm run e2e        # full end-to-end against real TMS API (needs TMS_API_KEY in .env)
 ```
 
 Phase 1 deploys to Vercel (region `sin1`). Connect from Claude Code with a custom HTTP MCP server:

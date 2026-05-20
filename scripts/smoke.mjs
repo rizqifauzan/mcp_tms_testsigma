@@ -1,11 +1,11 @@
 // Local smoke test: instantiate the MCP server, call tools/list via the
 // in-memory transport. No HTTP, no real TMS API call. Verifies wiring.
 //
-// Usage:  node scripts/smoke.mjs
+// Usage:  npm run smoke   (or: npx tsx scripts/smoke.mjs)
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { buildServer } from "../src/server.ts";
+import { buildServer } from "../src/server.js";
 
 const server = buildServer("smoke-test-fake-key");
 const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();

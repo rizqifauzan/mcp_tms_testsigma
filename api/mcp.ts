@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { buildServer } from "../src/server.ts";
-import { AuthError, extractApiKey } from "../src/auth.ts";
+import { buildServer } from "../src/server.js";
+import { AuthError, extractApiKey } from "../src/auth.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "GET") {

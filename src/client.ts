@@ -1,4 +1,4 @@
-import { TMS_BASE_URL } from "./config.ts";
+import { TMS_BASE_URL } from "./config.js";
 
 export class TmsApiError extends Error {
   readonly status: number;
