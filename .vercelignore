@@ -1,0 +1,9 @@
+# Source files are imported by api/mcp.ts. They must NOT appear as
+# separate function entries (otherwise Vercel tries to invoke them
+# directly and crashes — they don't export a handler).
+# `includeFiles` in vercel.json re-adds them into the function bundle.
+src/
+scripts/
+docs/
+.env
+.env.*

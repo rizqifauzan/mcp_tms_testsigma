@@ -3,7 +3,8 @@
   "regions": ["sin1"],
   "functions": {
     "api/mcp.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "src/**"
     }
   },
   "rewrites": [
