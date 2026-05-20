@@ -1,6 +1,6 @@
 import { z } from "zod";
-import type { TmsClient } from "../client.ts";
-import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.ts";
+import type { TmsClient } from "../client.js";
+import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.js";
 
 interface Label {
   id: string;

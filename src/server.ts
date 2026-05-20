@@ -1,29 +1,29 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ZodRawShape } from "zod";
-import { SERVER_INFO } from "./config.ts";
-import { TmsClient, TmsApiError } from "./client.ts";
-import { getProject, getProjectInputSchema, listProjects, listProjectsInputSchema } from "./tools/projects.ts";
-import { listFolders, listFoldersInputSchema } from "./tools/folders.ts";
+import { SERVER_INFO } from "./config.js";
+import { TmsClient, TmsApiError } from "./client.js";
+import { getProject, getProjectInputSchema, listProjects, listProjectsInputSchema } from "./tools/projects.js";
+import { listFolders, listFoldersInputSchema } from "./tools/folders.js";
 import {
   getTestCase,
   getTestCaseInputSchema,
   listTestCases,
   listTestCasesInputSchema,
-} from "./tools/test_cases.ts";
+} from "./tools/test_cases.js";
 import {
   getTestPlan,
   getTestPlanInputSchema,
   listTestPlans,
   listTestPlansInputSchema,
-} from "./tools/test_plans.ts";
+} from "./tools/test_plans.js";
 import {
   getTestRun,
   getTestRunInputSchema,
   listTestRuns,
   listTestRunsInputSchema,
-} from "./tools/test_runs.ts";
-import { listLabelOptionsInputSchema, makeListLabelOptions } from "./tools/lookups.ts";
-import type { HybridResponse } from "./format.ts";
+} from "./tools/test_runs.js";
+import { listLabelOptionsInputSchema, makeListLabelOptions } from "./tools/lookups.js";
+import type { HybridResponse } from "./format.js";
 
 type ToolHandler = (client: TmsClient, args: unknown) => Promise<HybridResponse>;
 

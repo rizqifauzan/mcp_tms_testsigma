@@ -3,7 +3,6 @@
   "regions": ["sin1"],
   "functions": {
     "api/mcp.ts": {
-      "runtime": "@vercel/node@5.0.0",
       "maxDuration": 30
     }
   },

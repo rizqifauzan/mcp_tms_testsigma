@@ -1,4 +1,4 @@
-import type { PageInfo } from "./client.ts";
+import type { PageInfo } from "./client.js";
 
 export interface HybridResponse {
   [key: string]: unknown;

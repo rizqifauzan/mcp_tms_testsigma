@@ -1,8 +1,8 @@
 import { z } from "zod";
-import type { TmsClient } from "../client.ts";
-import { memo } from "../cache.ts";
-import { LOOKUP_CACHE_TTL_MS } from "../config.ts";
-import { hybrid, mdTable, type HybridResponse } from "../format.ts";
+import type { TmsClient } from "../client.js";
+import { memo } from "../cache.js";
+import { LOOKUP_CACHE_TTL_MS } from "../config.js";
+import { hybrid, mdTable, type HybridResponse } from "../format.js";
 
 interface LookupRow {
   id: string;
