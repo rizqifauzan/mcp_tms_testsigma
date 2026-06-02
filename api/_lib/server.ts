@@ -26,8 +26,8 @@ import { listLabelOptionsInputSchema, makeListLabelOptions } from "./tools/looku
 import {
   bulkUpdateTestCasesInputSchema,
   createTestCaseInputSchema,
-  deleteTestCase,
-  deleteTestCaseInputSchema,
+  // deleteTestCase, // DISABLED: delete tool dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+  // deleteTestCaseInputSchema,
   makeBulkUpdateTestCases,
   makeCreateTestCase,
   makeUpdateTestCase,
@@ -36,8 +36,8 @@ import {
 import {
   createFolder,
   createFolderInputSchema,
-  deleteFolder,
-  deleteFolderInputSchema,
+  // deleteFolder, // DISABLED: delete tool dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+  // deleteFolderInputSchema,
   moveFolder,
   moveFolderInputSchema,
   updateFolder,
@@ -45,8 +45,8 @@ import {
 } from "./tools/folders_write.js";
 import {
   createTestPlanInputSchema,
-  deleteTestPlan,
-  deleteTestPlanInputSchema,
+  // deleteTestPlan, // DISABLED: delete tool dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+  // deleteTestPlanInputSchema,
   makeCreateTestPlan,
   makeUpdateTestPlan,
   updateTestPlanInputSchema,
@@ -55,8 +55,8 @@ import {
   closeTestRun,
   closeTestRunInputSchema,
   createTestRunInputSchema,
-  deleteTestRun,
-  deleteTestRunInputSchema,
+  // deleteTestRun, // DISABLED: delete tool dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+  // deleteTestRunInputSchema,
   makeCreateTestRun,
   makeMarkTestRunResult,
   markTestRunResultInputSchema,
@@ -170,14 +170,15 @@ function buildTools(apiKey: string): ToolDef[] {
       inputSchema: updateTestCaseInputSchema,
       handler: makeUpdateTestCase(apiKey),
     },
-    {
-      name: "delete_test_case",
-      title: "Delete a test case",
-      description:
-        "Permanently delete a test case. Destructive — Claude Code will prompt the user for permission before invoking. Accepts UUID or human ID.",
-      inputSchema: deleteTestCaseInputSchema,
-      handler: deleteTestCase,
-    },
+    // DISABLED: delete_test_case dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+    // {
+    //   name: "delete_test_case",
+    //   title: "Delete a test case",
+    //   description:
+    //     "Permanently delete a test case. Destructive — Claude Code will prompt the user for permission before invoking. Accepts UUID or human ID.",
+    //   inputSchema: deleteTestCaseInputSchema,
+    //   handler: deleteTestCase,
+    // },
     {
       name: "bulk_update_test_cases",
       title: "Bulk update multiple test cases",
@@ -210,14 +211,15 @@ function buildTools(apiKey: string): ToolDef[] {
       inputSchema: moveFolderInputSchema,
       handler: moveFolder,
     },
-    {
-      name: "delete_folder",
-      title: "Delete a folder",
-      description:
-        "Permanently delete a folder. Destructive — Claude Code will prompt the user for permission. Test cases inside the folder may also be affected (TMS behavior on deleted folders depends on server config; verify before bulk deletes).",
-      inputSchema: deleteFolderInputSchema,
-      handler: deleteFolder,
-    },
+    // DISABLED: delete_folder dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+    // {
+    //   name: "delete_folder",
+    //   title: "Delete a folder",
+    //   description:
+    //     "Permanently delete a folder. Destructive — Claude Code will prompt the user for permission. Test cases inside the folder may also be affected (TMS behavior on deleted folders depends on server config; verify before bulk deletes).",
+    //   inputSchema: deleteFolderInputSchema,
+    //   handler: deleteFolder,
+    // },
     {
       name: "create_test_plan",
       title: "Create a test plan",
@@ -234,14 +236,15 @@ function buildTools(apiKey: string): ToolDef[] {
       inputSchema: updateTestPlanInputSchema,
       handler: makeUpdateTestPlan(apiKey),
     },
-    {
-      name: "delete_test_plan",
-      title: "Delete a test plan",
-      description:
-        "Permanently delete a test plan. Destructive — Claude Code will prompt the user. Does NOT delete the runs inside the plan; they become unlinked.",
-      inputSchema: deleteTestPlanInputSchema,
-      handler: deleteTestPlan,
-    },
+    // DISABLED: delete_test_plan dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+    // {
+    //   name: "delete_test_plan",
+    //   title: "Delete a test plan",
+    //   description:
+    //     "Permanently delete a test plan. Destructive — Claude Code will prompt the user. Does NOT delete the runs inside the plan; they become unlinked.",
+    //   inputSchema: deleteTestPlanInputSchema,
+    //   handler: deleteTestPlan,
+    // },
     {
       name: "create_test_run",
       title: "Create a test run (execution)",
@@ -266,14 +269,15 @@ function buildTools(apiKey: string): ToolDef[] {
       inputSchema: closeTestRunInputSchema,
       handler: closeTestRun,
     },
-    {
-      name: "delete_test_run",
-      title: "Delete a test run",
-      description:
-        "Permanently delete a test run and its results. Destructive — Claude Code will prompt the user. Useful for cleaning up experimental or accidentally-created runs.",
-      inputSchema: deleteTestRunInputSchema,
-      handler: deleteTestRun,
-    },
+    // DISABLED: delete_test_run dinonaktifkan untuk mengurangi penghapusan tidak disengaja
+    // {
+    //   name: "delete_test_run",
+    //   title: "Delete a test run",
+    //   description:
+    //     "Permanently delete a test run and its results. Destructive — Claude Code will prompt the user. Useful for cleaning up experimental or accidentally-created runs.",
+    //   inputSchema: deleteTestRunInputSchema,
+    //   handler: deleteTestRun,
+    // },
   ];
 }
 
