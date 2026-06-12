@@ -99,20 +99,39 @@ export async function getTestRun(
   return hybrid({ test_run: run }, sections.join("\n"));
 }
 
+// The per-run test_cases endpoint nests the TC under a `test_case` object and
+// returns the result status as a readable `status` string (plus `status_id`
+// UUID). The executor lives in `assignee` (object) / `assignee_id` (UUID).
+// Field names verified against a live GR-R-23 response (2026-06).
+interface RunCaseUser {
+  id?: string;
+  email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  [k: string]: unknown;
+}
+
+interface NestedTestCase {
+  id?: string;
+  human_id?: string | null;
+  title?: string | null;
+  [k: string]: unknown;
+}
+
 interface TestRunCase {
   id?: string;
-  test_case_id?: string | null;
-  test_case_human_id?: string | null;
-  test_case_title?: string | null;
-  title?: string | null;
-  test_run_status_id?: string | null;
-  status?: string | null;
-  status_name?: string | null;
-  user_id?: string | null;
+  status?: string | null; // readable result name, e.g. "Passed"
+  status_id?: string | null; // result status UUID
+  assignee_id?: string | null;
+  assignee?: RunCaseUser | null;
   description?: string | null;
-  executed_at?: number | null;
-  updated_at?: number | null;
+  test_case?: NestedTestCase | null;
   [k: string]: unknown;
+}
+
+function runCaseUserName(u: RunCaseUser): string {
+  const full = [u.first_name, u.last_name].filter(Boolean).join(" ").trim();
+  return full || u.email || u.id || "—";
 }
 
 export const getTestRunResultsInputSchema = {
@@ -129,9 +148,9 @@ export function makeGetTestRunResults(apiKey: string) {
     const args = GetTestRunResultsArgs.parse(rawArgs);
     const basePath = `/projects/${encodeURIComponent(args.project_id)}/test_runs/${encodeURIComponent(args.test_run_id)}`;
 
-    // Fetch the run (for overall status + summary), the per-TC results, and the
-    // lookup maps to translate status/user UUIDs into readable names. These are
-    // independent so we issue them together.
+    // Fetch the run (for overall status) and the per-TC results, plus the
+    // lookup maps used as fallbacks when a record only carries UUIDs. These
+    // are independent so we issue them together.
     const [run, results, statusNames, userNames] = await Promise.all([
       client.getOne<TestRun>(basePath),
       client.getList<TestRunCase>(`${basePath}/test_cases`, {
@@ -143,42 +162,76 @@ export function makeGetTestRunResults(apiKey: string) {
     ]);
 
     const statusOf = (c: TestRunCase): string => {
-      if (c.status_name) return c.status_name;
-      if (c.test_run_status_id && statusNames.has(c.test_run_status_id)) {
-        return statusNames.get(c.test_run_status_id)!;
-      }
-      return c.status ?? "UnTested";
+      if (c.status) return c.status;
+      if (c.status_id && statusNames.has(c.status_id)) return statusNames.get(c.status_id)!;
+      return "UnTested";
     };
+
+    const caseNameOf = (c: TestRunCase): string =>
+      c.test_case?.human_id ?? c.test_case?.title ?? c.test_case?.id ?? c.id ?? "—";
+
+    const executorOf = (c: TestRunCase): string => {
+      if (c.assignee) return runCaseUserName(c.assignee);
+      if (c.assignee_id) return userNames.get(c.assignee_id) ?? c.assignee_id;
+      return "—";
+    };
+
+    // The run detail's test_run_status_summary comes back null/empty for many
+    // runs, so derive the per-status counts from the case list ourselves.
+    const counts = new Map<string, number>();
+    for (const c of results.items) {
+      const s = statusOf(c);
+      counts.set(s, (counts.get(s) ?? 0) + 1);
+    }
+    const summary = [...counts.entries()].map(([status_name, count]) => ({ status_name, count }));
+
+    const hasNotes = results.items.some((c) => c.description && c.description.trim().length > 0);
 
     const sections: string[] = [
       `**Results — ${run.human_id ?? run.id} — ${run.title}**`,
-      `\nRun status: \`${run.status ?? "—"}\` · Cases: ${run.test_cases_count ?? results.items.length}`,
+      `\nRun status: \`${run.status ?? "—"}\` · Cases: ${run.test_cases_count ?? results.page_info.total_count}`,
     ];
 
-    if (run.test_run_status_summary && run.test_run_status_summary.length > 0) {
+    if (summary.length > 0) {
       const summaryMd = mdTable(
         ["Status", "Count"],
-        run.test_run_status_summary.map((s) => [s.status_name ?? s.status_id ?? "—", s.count ?? 0]),
+        summary.map((s) => [s.status_name, s.count]),
       );
       sections.push(`\n**Result Summary**\n${summaryMd}`);
     }
 
+    const headers = hasNotes
+      ? ["Test Case", "Result", "Executed By", "Notes"]
+      : ["Test Case", "Result", "Executed By"];
     const resultsMd = mdTable(
-      ["Test Case", "Result", "Executed By", "Notes"],
-      results.items.map((c) => [
-        c.test_case_human_id ?? c.test_case_title ?? c.title ?? c.test_case_id ?? "—",
-        statusOf(c),
-        c.user_id ? userNames.get(c.user_id) ?? c.user_id : "—",
-        c.description ?? "—",
-      ]),
+      headers,
+      results.items.map((c) => {
+        const row = [caseNameOf(c), statusOf(c), executorOf(c)];
+        if (hasNotes) row.push(c.description ?? "—");
+        return row;
+      }),
     );
     sections.push(`\n**Per-Test-Case Results**\n${resultsMd}${paginationFooter(results.page_info)}`);
+
+    // Slim each case down to the fields that matter for a results view. The raw
+    // payload embeds the full nested test_case (steps, expected_results, …),
+    // which balloons the response past the MCP token cap on large runs.
+    const cases = results.items.map((c) => ({
+      run_case_id: c.id,
+      test_case_id: c.test_case?.id ?? null,
+      human_id: c.test_case?.human_id ?? null,
+      title: c.test_case?.title ?? null,
+      status: statusOf(c),
+      status_id: c.status_id ?? null,
+      assignee: executorOf(c),
+      ...(c.description ? { description: c.description } : {}),
+    }));
 
     return hybrid(
       {
         test_run: { id: run.id, human_id: run.human_id, title: run.title, status: run.status },
-        test_run_status_summary: run.test_run_status_summary ?? [],
-        test_run_cases: results.items,
+        result_summary: summary,
+        test_run_cases: cases,
         page_info: results.page_info,
       },
       sections.join("\n"),
