@@ -188,6 +188,43 @@ export async function defaultLookup(
 }
 
 /**
+ * Build a UUID → display-name map for a lookup table. Used to translate the
+ * UUID IDs returned on records (e.g. a test run case's test_run_status_id)
+ * into human-readable names when rendering. Cached per apiKey for the lookup
+ * TTL, same as the name → UUID resolution path.
+ */
+export async function nameMapFor(
+  client: TmsClient,
+  apiKey: string,
+  kind: "test_run_status",
+): Promise<Map<string, string>> {
+  let rows: NamedRow[];
+  switch (kind) {
+    case "test_run_status":
+      rows = await fetchRows(client, apiKey, "test_run_statuses", () =>
+        client.getList<NamedRow>("/test_runs/statuses", { page_size: 100 }),
+      );
+      break;
+  }
+  return new Map(rows.map((r) => [r.id, r.name]));
+}
+
+/**
+ * Build a UUID → display-name map for users. Names follow the same
+ * "First Last" / email / id fallback used elsewhere.
+ */
+export async function userNameMap(
+  client: TmsClient,
+  apiKey: string,
+): Promise<Map<string, string>> {
+  const users = await memo(`${apiKey}::users`, LOOKUP_CACHE_TTL_MS, async () => {
+    const r = await client.getList<UserRow>("/users", { page_size: 200 });
+    return r.items;
+  });
+  return new Map(users.map((u) => [u.id, userDisplayName(u)]));
+}
+
+/**
  * Pick a default owner UUID. TMS doesn't expose a /me endpoint, and the
  * JWT `sub` claim is a service/auth identifier not present in the users
  * table (foreign key violation when used as owner_id). Falls back to the

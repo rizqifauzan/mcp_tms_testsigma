@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { TmsClient } from "../client.js";
+import { nameMapFor, userNameMap } from "../resolve.js";
 import { hybrid, mdTable, paginationFooter, type HybridResponse } from "../format.js";
 
 interface StatusSummary {
@@ -96,4 +97,91 @@ export async function getTestRun(
   }
 
   return hybrid({ test_run: run }, sections.join("\n"));
+}
+
+interface TestRunCase {
+  id?: string;
+  test_case_id?: string | null;
+  test_case_human_id?: string | null;
+  test_case_title?: string | null;
+  title?: string | null;
+  test_run_status_id?: string | null;
+  status?: string | null;
+  status_name?: string | null;
+  user_id?: string | null;
+  description?: string | null;
+  executed_at?: number | null;
+  updated_at?: number | null;
+  [k: string]: unknown;
+}
+
+export const getTestRunResultsInputSchema = {
+  project_id: z.string().min(1).describe("Project UUID"),
+  test_run_id: z.string().min(1).describe("Test run UUID or human ID (e.g. GR-R-1)"),
+  page_size: z.number().int().min(1).max(100).optional(),
+  cursor: z.string().optional(),
+};
+
+const GetTestRunResultsArgs = z.object(getTestRunResultsInputSchema);
+
+export function makeGetTestRunResults(apiKey: string) {
+  return async (client: TmsClient, rawArgs: unknown): Promise<HybridResponse> => {
+    const args = GetTestRunResultsArgs.parse(rawArgs);
+    const basePath = `/projects/${encodeURIComponent(args.project_id)}/test_runs/${encodeURIComponent(args.test_run_id)}`;
+
+    // Fetch the run (for overall status + summary), the per-TC results, and the
+    // lookup maps to translate status/user UUIDs into readable names. These are
+    // independent so we issue them together.
+    const [run, results, statusNames, userNames] = await Promise.all([
+      client.getOne<TestRun>(basePath),
+      client.getList<TestRunCase>(`${basePath}/test_cases`, {
+        page_size: args.page_size,
+        cursor: args.cursor,
+      }),
+      nameMapFor(client, apiKey, "test_run_status").catch(() => new Map<string, string>()),
+      userNameMap(client, apiKey).catch(() => new Map<string, string>()),
+    ]);
+
+    const statusOf = (c: TestRunCase): string => {
+      if (c.status_name) return c.status_name;
+      if (c.test_run_status_id && statusNames.has(c.test_run_status_id)) {
+        return statusNames.get(c.test_run_status_id)!;
+      }
+      return c.status ?? "UnTested";
+    };
+
+    const sections: string[] = [
+      `**Results — ${run.human_id ?? run.id} — ${run.title}**`,
+      `\nRun status: \`${run.status ?? "—"}\` · Cases: ${run.test_cases_count ?? results.items.length}`,
+    ];
+
+    if (run.test_run_status_summary && run.test_run_status_summary.length > 0) {
+      const summaryMd = mdTable(
+        ["Status", "Count"],
+        run.test_run_status_summary.map((s) => [s.status_name ?? s.status_id ?? "—", s.count ?? 0]),
+      );
+      sections.push(`\n**Result Summary**\n${summaryMd}`);
+    }
+
+    const resultsMd = mdTable(
+      ["Test Case", "Result", "Executed By", "Notes"],
+      results.items.map((c) => [
+        c.test_case_human_id ?? c.test_case_title ?? c.title ?? c.test_case_id ?? "—",
+        statusOf(c),
+        c.user_id ? userNames.get(c.user_id) ?? c.user_id : "—",
+        c.description ?? "—",
+      ]),
+    );
+    sections.push(`\n**Per-Test-Case Results**\n${resultsMd}${paginationFooter(results.page_info)}`);
+
+    return hybrid(
+      {
+        test_run: { id: run.id, human_id: run.human_id, title: run.title, status: run.status },
+        test_run_status_summary: run.test_run_status_summary ?? [],
+        test_run_cases: results.items,
+        page_info: results.page_info,
+      },
+      sections.join("\n"),
+    );
+  };
 }

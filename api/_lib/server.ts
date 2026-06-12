@@ -19,8 +19,10 @@ import {
 import {
   getTestRun,
   getTestRunInputSchema,
+  getTestRunResultsInputSchema,
   listTestRuns,
   listTestRunsInputSchema,
+  makeGetTestRunResults,
 } from "./tools/test_runs.js";
 import { listLabelOptionsInputSchema, makeListLabelOptions } from "./tools/lookups.js";
 import {
@@ -145,6 +147,14 @@ function buildTools(apiKey: string): ToolDef[] {
         "Fetch detailed information about a single test run including its result summary (counts per status).",
       inputSchema: getTestRunInputSchema,
       handler: getTestRun,
+    },
+    {
+      name: "get_test_run_results",
+      title: "Get test run status and per-TC results",
+      description:
+        "Fetch the execution status and detailed per-test-case results of a single test run. Returns the overall run status (ACTIVE/CLOSED), the result summary (counts per status), and a row for each test case with its result (Passed/Failed/Blocked/Skipped/UnTested/In Progress), who executed it, and any execution notes. Status and user UUIDs are translated to readable names. Accepts a UUID or human ID (e.g. GR-R-1).",
+      inputSchema: getTestRunResultsInputSchema,
+      handler: makeGetTestRunResults(apiKey),
     },
     {
       name: "list_label_options",
