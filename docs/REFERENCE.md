@@ -164,7 +164,7 @@ A browser session JWT and an API key look identical in shape — both work with 
 
 | Fact | Detail |
 |---|---|
-| **Base URL** | `https://test-management.testsigma.com/api/v1/` |
+| **Base URL** | `https://arcus.testsigma.com/api/v1/` — ⚠️ **changed 2026-07-29.** The old base `test-management.testsigma.com/api/v1` now returns `301 → https://arcus.testsigma.com:443/...`. Because that redirect is cross-origin, `fetch` strips the `Authorization` header, so every call fails with `401 Authorization header required`. Always call `arcus` directly. Note the **UI** host is still `test-management.testsigma.com` (§1) — only the API moved. |
 | **Auth** | `Authorization: Bearer <JWT>` — see §3 |
 | **API version** | Only `v1` exists (v2/v3/v4 → 404) |
 | **Path style** | snake_case for resources (`test_cases`, `test_runs`, `folders`) — camelCase variants (`testCases`) return 404 |
@@ -202,7 +202,7 @@ The Postman doc covers 44 endpoints across 7 groups: Project, Folder, Test Case,
 
 ## 5. Endpoints Reference
 
-All endpoints are under base `https://test-management.testsigma.com/api/v1`. Auth: `Authorization: Bearer <key>`. Status: [x] = documented in Postman doc + observed body shape captured, [~] = documented but body not yet observed (empty in our account).
+All endpoints are under base `https://arcus.testsigma.com/api/v1` (see §4 — this moved on 2026-07-29). Auth: `Authorization: Bearer <key>`. Status: [x] = documented in Postman doc + observed body shape captured, [~] = documented but body not yet observed (empty in our account).
 
 ### Projects
 | Method | Path | Notes |
@@ -383,7 +383,7 @@ All endpoints are under base `https://test-management.testsigma.com/api/v1`. Aut
 | # | Question | Status | Impact | How to resolve |
 |---|---|---|---|---|
 | 1 | API key TMS = automation key, atau terpisah? Apakah ada API key panel? | ✅ **Closed** — TMS Settings has API Keys panel (user-confirmed). Both API key + JWT session token work with `Authorization: Bearer`. | Critical | — |
-| 2 | API base URL exact path? | ✅ **Closed** — `/api/v1/` on `test-management.testsigma.com` | Critical | — |
+| 2 | API base URL exact path? | ✅ **Closed** — `/api/v1/` on `arcus.testsigma.com` (was `test-management.testsigma.com` until 2026-07-29; see §4 for the redirect/auth-header gotcha) | Critical | — |
 | 3 | Endpoints + body shapes for all resources? | ✅ **Closed** — Official Postman collection covers full CRUD for Project, Folder, Test Case, Step Group, Test Run, Test Plan; plus 5 Settings lookup endpoints | High | — |
 | 4 | Pagination style? | ✅ **Closed** — cursor-based, base64-encoded JSON. Param: `?page_size=N`. Returns `page_info: {page_size, total_count, next, prev}` | Medium | — |
 | 5 | Rate limits? | ✅ **Closed (2026-05-19)** — measured empirically during Phase 1 E2E: ~10 req/sec hard cap. Burst of 5 parallel lookup fetches combined with prior in-flight calls returns HTTP 500 with body `{"message": "rate limit exceeded"}` (NOT the standard 429). Client should sequentialize bulk operations or add small delay. | Medium | — |

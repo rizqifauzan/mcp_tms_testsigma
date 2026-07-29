@@ -10,7 +10,7 @@
 
 set -uo pipefail
 
-BASE="${TMS_BASE:-https://test-management.testsigma.com/api/v1}"
+BASE="${TMS_BASE:-https://arcus.testsigma.com/api/v1}"
 KEY="${TMS_API_KEY:-}"
 OUT="tmp/phase0"
 

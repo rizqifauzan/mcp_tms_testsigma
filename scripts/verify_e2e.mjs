@@ -11,7 +11,7 @@ if (!KEY) {
   process.exit(1);
 }
 
-const BASE = "https://test-management.testsigma.com/api/v1";
+const BASE = "https://arcus.testsigma.com/api/v1";
 
 async function call(method, path, query) {
   const url = new URL(BASE + path);
